@@ -84,10 +84,14 @@ export default async function UrunlerPage({ searchParams }: { searchParams: { q?
              return (
               <Link href={`/urun/${product.id}`} key={product.id}>
                 <div className="bg-white border text-center border-slate-100 rounded-2xl p-5 hover:shadow-xl hover:border-brand/30 transition-all cursor-pointer group flex flex-col h-full">
-                  <div className="bg-slate-50 rounded-xl h-48 mb-4 flex items-center justify-center p-4">
-                    <span className="text-6xl group-hover:scale-110 transition-transform duration-300">
-                      {product.image_url}
-                    </span>
+                  <div className="bg-slate-50 rounded-xl h-48 mb-4 flex items-center justify-center p-4 overflow-hidden relative">
+                    {(product.image_url?.startsWith('http') || product.image_url?.startsWith('data:image')) ? (
+                      <img src={product.image_url} alt={product.title} className="max-w-full max-h-full object-contain group-hover:scale-110 transition-transform duration-300" />
+                    ) : (
+                      <span className="text-6xl group-hover:scale-110 transition-transform duration-300 break-all text-center">
+                        {product.image_url}
+                      </span>
+                    )}
                   </div>
                   <div className="flex-1 text-left">
                     <span className="text-xs text-brand font-semibold mb-1 block">{product.brands?.name}</span>

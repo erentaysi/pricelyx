@@ -93,9 +93,15 @@ export default async function Home() {
                         
                         return (
                             <Link href={`/urun/${product.id}`} key={product.id} className="bg-white rounded-xl shadow-sm border border-slate-100 hover:shadow-xl transition-all duration-300 overflow-hidden">
-                                <div className="relative h-40 bg-slate-100 flex items-center justify-center text-6xl">
-                                    {product.image_url}
-                                    <div className="absolute top-2 left-2 bg-gradient-to-r from-primary to-accent text-white text-xs font-bold px-3 py-1 rounded-full shadow">🔥 Trend</div>
+                                <div className="relative h-40 bg-slate-100 flex items-center justify-center text-6xl overflow-hidden p-2">
+                                  {(!product.image_url) ? (
+                                    <span>📦</span>
+                                  ) : (product.image_url?.startsWith('http') || product.image_url?.includes('data:image')) ? (
+                                    <img src={product.image_url} alt={product.title} className="max-w-full max-h-full object-contain" />
+                                  ) : (
+                                    <span className="break-all text-center text-4xl line-clamp-3 overflow-hidden">{product.image_url}</span>
+                                  )}
+                                  <div className="absolute top-2 left-2 bg-gradient-to-r from-primary to-accent text-white text-xs font-bold px-3 py-1 rounded-full shadow z-10">🔥 Trend</div>
                                 </div>
                                 <div className="p-4">
                                     <div className="text-xs text-gray-500 mb-1">{product.brands?.name || 'Bilinmiyor'}</div>

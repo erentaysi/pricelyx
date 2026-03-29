@@ -116,7 +116,15 @@ export default async function UrunDetay({ params }: { params: { id: string } }) 
                     🔥 Trend
                   </span>
                )}
-               <div className="text-9xl">{product.image_url}</div>
+               <div className="w-full h-full flex items-center justify-center overflow-hidden">
+                 {(product.image_url?.startsWith('http') || product.image_url?.startsWith('data:image')) ? (
+                   <img src={product.image_url} alt={product.title} className="max-w-full max-h-full object-contain" />
+                 ) : (
+                   <span className="text-9xl break-all line-clamp-3 text-center">
+                     {product.image_url}
+                   </span>
+                 )}
+               </div>
                
                <div className="absolute top-4 right-4 flex flex-col gap-2 z-10">
                  <button className="w-10 h-10 bg-white/50 backdrop-blur border border-slate-200 text-slate-400 hover:text-red-500 rounded-full flex items-center justify-center shadow-sm transition-all hover:scale-110">♡</button>
@@ -126,8 +134,12 @@ export default async function UrunDetay({ params }: { params: { id: string } }) 
             
             <div className="grid grid-cols-4 gap-2 mt-4">
                {[1,2,3,4].map(idx => (
-                 <div key={idx} className="bg-white border border-slate-100 aspect-square rounded-xl flex items-center justify-center text-3xl cursor-pointer hover:border-brand transition-all opacity-60 hover:opacity-100">
-                   {product.image_url}
+                 <div key={idx} className="bg-white border border-slate-100 aspect-square rounded-xl flex items-center justify-center text-3xl cursor-pointer hover:border-brand transition-all opacity-60 hover:opacity-100 overflow-hidden p-2">
+                   {(product.image_url?.startsWith('http') || product.image_url?.startsWith('data:image')) ? (
+                     <img src={product.image_url} alt={product.title} className="w-full h-full object-contain" />
+                   ) : (
+                     <span className="break-all">{product.image_url}</span>
+                   )}
                  </div>
                ))}
             </div>
