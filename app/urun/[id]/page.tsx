@@ -3,6 +3,8 @@ import { supabase } from '@/lib/supabase';
 import SearchForm from '@/app/components/SearchForm';
 import Link from 'next/link';
 
+export const dynamic = 'force-dynamic';
+
 export default async function UrunDetay({ params }: { params: { id: string } }) {
   // Fetch real product from Supabase
   const { data: product } = await supabase

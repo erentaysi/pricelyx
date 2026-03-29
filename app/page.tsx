@@ -2,6 +2,8 @@ import Link from 'next/link';
 import { supabase } from '@/lib/supabase';
 import SearchForm from '@/app/components/SearchForm';
 
+export const dynamic = 'force-dynamic';
+
 export default async function Home() {
   // Fetch products from Supabase
   const { data: dbProducts } = await supabase
