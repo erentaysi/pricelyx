@@ -3,7 +3,46 @@ import { supabase } from '@/lib/supabase';
 import SearchForm from '@/app/components/SearchForm';
 import Link from 'next/link';
 
+import { Metadata } from 'next';
+
 export const dynamic = 'force-dynamic';
+
+export async function generateMetadata({ params }: { params: { id: string } }): Promise<Metadata> {
+  const { data: product } = await supabase
+    .from('products')
+    .select('title, categories(name), image_url')
+    .eq('id', params.id)
+    .single();
+
+  if (!product) {
+    return {
+      title: 'Ürün Bulunamadı | Piinti'
+    };
+  }
+
+  const categoryObj: any = Array.isArray(product.categories) ? product.categories[0] : product.categories;
+  const categoryName = categoryObj?.name || 'Kategori';
+
+  const title = `${product.title} - En Ucuz Fiyat Seçenekleri`;
+  const description = `${product.title} modelini en uygun fiyata bulun. ${categoryName} kategorisindeki en güncel fiyatları Piinti kalitesiyle karşılaştırın.`;
+
+  return {
+    title,
+    description,
+    openGraph: {
+      title,
+      description,
+      // For now we use the image_url as a rough approximation even if it's an emoji string in DB, normally this would be an absolute URL
+      images: [
+        {
+          url: 'https://pricelyx-ten.vercel.app/og-image.jpg', // Placeholder for actual image
+          width: 1200,
+          height: 630,
+        }
+      ]
+    },
+  };
+}
 
 export default async function UrunDetay({ params }: { params: { id: string } }) {
   // Fetch real product from Supabase
@@ -29,6 +68,12 @@ export default async function UrunDetay({ params }: { params: { id: string } }) 
     notFound();
   }
 
+  const categoryObj: any = Array.isArray(product.categories) ? product.categories[0] : product.categories;
+  const categoryName = categoryObj?.name;
+  
+  const brandObj: any = Array.isArray(product.brands) ? product.brands[0] : product.brands;
+  const brandName = brandObj?.name;
+
   const prices = product.product_prices || [];
   const lowestPrice = prices.length > 0 ? Math.min(...prices.map((p:any) => p.price)) : 0;
   
@@ -53,8 +98,12 @@ export default async function UrunDetay({ params }: { params: { id: string } }) 
         <div className="text-sm font-medium text-slate-500 mb-8 flex items-center gap-2">
            <Link href="/" className="hover:text-brand transition-colors">Ana Sayfa</Link>
            <span>/</span>
-           <Link href={`/urunler?cat=${product.categories?.name}`} className="hover:text-brand transition-colors">{product.categories?.name}</Link>
-           <span>/</span>
+           {categoryName && (
+             <>
+               <Link href={`/urunler?cat=${categoryName}`} className="hover:text-brand transition-colors">{categoryName}</Link>
+               <span>/</span>
+             </>
+           )}
            <span className="text-slate-800">{product.title}</span>
         </div>
 
@@ -95,7 +144,7 @@ export default async function UrunDetay({ params }: { params: { id: string } }) 
               </div>
               <span className="text-slate-400 text-sm">{product.reviews_count} Değerlendirme</span>
               <span className="text-slate-300">|</span>
-              <span className="text-slate-600 font-semibold">{product.brands?.name}</span>
+              <span className="text-slate-600 font-semibold">{brandName}</span>
             </div>
 
             <div className="bg-blue-50/50 p-6 rounded-2xl mb-8 flex items-center justify-between shadow-sm border border-blue-100">

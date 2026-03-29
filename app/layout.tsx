@@ -3,8 +3,25 @@ import "./globals.css";
 import Link from 'next/link';
 
 export const metadata: Metadata = {
-  title: "Piinti - En İyi Fiyat, En Akıllı Seçim",
-  description: "Piinti ile Türkiye'nin en iyi e-ticaret sitelerindeki ürün fiyatlarını karşılaştırın.",
+  metadataBase: new URL('https://pricelyx-ten.vercel.app'),
+  title: {
+    default: "Piinti | Akıllı Alışverişin Ayrıcalıklı Adresi",
+    template: "%s | Piinti"
+  },
+  description: "Türkiye'nin en seçkin pazar yerlerini saniyeler içinde analiz edin. Piinti ile milyonlarca ürün arasından kaliteden ödün vermeden en doğru fiyatı keşfedin.",
+  openGraph: {
+    title: "Piinti | Akıllı Alışverişin Ayrıcalıklı Adresi",
+    description: "Sınıfının en iyisi fiyat karşılaştırma platformuyla premium alışveriş deneyimini yaşayın.",
+    url: "https://pricelyx-ten.vercel.app",
+    siteName: "Piinti",
+    locale: "tr_TR",
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Piinti | Akıllı Alışverişin Ayrıcalıklı Adresi",
+    description: "Kaliteden ödün vermeden en iyi fiyata ulaşın.",
+  }
 };
 
 export default function RootLayout({

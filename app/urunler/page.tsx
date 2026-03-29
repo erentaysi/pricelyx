@@ -1,8 +1,31 @@
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
 import FilterSidebar from "./FilterSidebar";
+import { Metadata } from 'next';
 
 export const dynamic = 'force-dynamic';
+
+export async function generateMetadata({ searchParams }: { searchParams: { q?: string, cat?: string, brand?: string } }): Promise<Metadata> {
+  const { q, cat, brand } = searchParams;
+  let title = "Tüm Ürünler";
+  let description = "En güncel ürünleri ve fiyatları karşılaştırın.";
+
+  if (q) {
+    title = `"${q}" İçin Sonuçlar`;
+    description = `${q} fiyatlarını ve özelliklerini tüm mağazalar arasından karşılaştırın.`;
+  } else if (cat) {
+    title = `${cat} Kategorisindeki Ürünler`;
+    description = `En iyi ${cat} modellerini ve fiyatlarını keşfedin.`;
+  } else if (brand) {
+    title = `${brand} Ürünleri`;
+    description = `${brand} marka ürünlerin fiyatlarını karşılaştırın.`;
+  }
+
+  return {
+    title: `${title} | Piinti`,
+    description,
+  };
+}
 
 export default async function UrunlerPage({ searchParams }: { searchParams: { q?: string, cat?: string, brand?: string } }) {
   const { q, cat, brand } = searchParams;
