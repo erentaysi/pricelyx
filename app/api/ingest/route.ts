@@ -13,9 +13,16 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Yetkisiz erişim. Güvenlik Anahtarı Yanlış!' }, { status: 401 });
     }
 
-    // Gelen JSON datasını parse etmek
     const rawData = await request.json();
-    const productsArray = Array.isArray(rawData) ? rawData : (rawData.data || rawData.items || []);
+    // Eğer n8n her ürünü tek tek gönderiyorsa (obje formatı), onu listeye dönüştürerek kurtaralım:
+    let productsArray = [];
+    if (Array.isArray(rawData)) {
+      productsArray = rawData;
+    } else if (rawData && (rawData.data || rawData.items)) {
+      productsArray = rawData.data || rawData.items;
+    } else if (rawData && typeof rawData === 'object' && Object.keys(rawData).length > 0) {
+      productsArray = [rawData]; // Tekil objeyi diziye al
+    }
 
     if (!productsArray || productsArray.length === 0) {
       return NextResponse.json({ error: 'Geçersiz data formatı veya boş liste.' }, { status: 400 });
