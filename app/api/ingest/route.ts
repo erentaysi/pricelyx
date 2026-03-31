@@ -82,14 +82,19 @@ export async function POST(request: Request) {
       const predictedSlug = guessCategory(title);
       let catObj = categories?.find(c => c.slug === predictedSlug);
       
-      // Ürünü Kontrol Et (daha önce eklenmiş mi?)
-      const { data: existingProduct } = await supabase.from('products').select('id').eq('title', title).single();
-      let finalProductId = existingProduct?.id;
+      const cleanTitle = title.trim();
+      // Ürünü Kontrol Et (daha önce eklenmiş mi?) - ilike ile büyük/küçük harf boşluk hatasını önle, limit(1) ile duplicate varsa çökmesini engelle
+      const { data: existingProducts } = await supabase.from('products')
+        .select('id')
+        .ilike('title', cleanTitle)
+        .limit(1);
+        
+      let finalProductId = existingProducts && existingProducts.length > 0 ? existingProducts[0].id : null;
 
       if (!finalProductId) {
         // Yeni Ürün Ekle
         const { data: newProd } = await supabase.from('products').insert({
-          title,
+          title: cleanTitle,
           brand_id: brandObj?.id,
           category_id: catObj?.id,
           image_url: imgUrl,
@@ -103,8 +108,8 @@ export async function POST(request: Request) {
       // Fiyatları Ekle veya Güncelle (Upsert mantığı)
       if (finalProductId && amazonVendorId) {
         // Amazon satıcısı için fiyat güncellemesi/eklemesi
-        const { data: existingPrice } = await supabase.from('product_prices')
-          .select('id')
+          const { data: existingPrice } = await supabase.from('product_prices')
+          .select('id, price')
           .eq('product_id', finalProductId)
           .eq('vendor_id', amazonVendorId)
           .single();
@@ -115,6 +120,15 @@ export async function POST(request: Request) {
              original_price: extractedOriginalPrice,
              product_url: url
            }).eq('id', existingPrice.id);
+
+           // Eğer fiyat değişmişse logla (Eski fiyat != Yeni fiyat)
+           if (existingPrice.price !== extractedPrice) {
+              await supabase.from('price_history').insert({
+                  product_id: finalProductId,
+                  vendor_id: amazonVendorId,
+                  price: extractedPrice
+              });
+           }
         } else {
            await supabase.from('product_prices').insert({
              product_id: finalProductId,
@@ -123,6 +137,13 @@ export async function POST(request: Request) {
              original_price: extractedOriginalPrice,
              product_url: url,
              shipping_info: item.delivery || 'Prime Kargo Bedava'
+           });
+
+           // İlk taranışta da grafiğe bir başlangıç noktası atmak zorundayız
+           await supabase.from('price_history').insert({
+              product_id: finalProductId,
+              vendor_id: amazonVendorId,
+              price: extractedPrice
            });
         }
         processedCount++;

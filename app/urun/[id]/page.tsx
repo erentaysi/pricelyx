@@ -2,6 +2,8 @@ import { notFound } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import SearchForm from '@/app/components/SearchForm';
 import Link from 'next/link';
+import PriceHistoryChart from '@/app/components/PriceHistoryChart';
+import PriceAlertModal from '@/app/components/PriceAlertModal';
 
 import { Metadata } from 'next';
 
@@ -59,6 +61,11 @@ export default async function UrunDetay({ params }: { params: { id: string } }) 
         product_url,
         in_stock,
         vendors (name, logo, color)
+      ),
+      price_history (
+        id,
+        price,
+        recorded_at
       )
     `)
     .eq('id', params.id)
@@ -159,16 +166,29 @@ export default async function UrunDetay({ params }: { params: { id: string } }) 
               <span className="text-slate-600 font-semibold">{brandName}</span>
             </div>
 
-            <div className="bg-blue-50/50 p-6 rounded-2xl mb-8 flex items-center justify-between shadow-sm border border-blue-100">
+            <div className="bg-blue-50/50 p-6 rounded-2xl mb-8 flex flex-col sm:flex-row items-start sm:items-center justify-between shadow-sm border border-blue-100 gap-6">
               <div>
                 <p className="text-sm font-semibold text-slate-500 mb-1">En Ucuz Fiyat</p>
                 <p className="text-4xl font-black text-primary">{lowestPrice > 0 ? formatPrice(lowestPrice) : 'Fiyat Yok'}</p>
               </div>
-              {sortedPrices.length > 0 && (
-                <a href={sortedPrices[0].product_url} target="_blank" rel="noopener noreferrer" className="bg-primary hover:bg-primary/90 text-white font-bold py-3 px-8 rounded-xl shadow-lg transition-transform hover:-translate-y-1">
-                  Hemen Al
-                </a>
-              )}
+              <div className="flex flex-col items-center gap-3 w-full sm:w-auto">
+                <PriceAlertModal productId={product.id} productTitle={product.title} currentPrice={lowestPrice} />
+                {sortedPrices.length > 0 && (
+                  <a href={sortedPrices[0].product_url} target="_blank" rel="noopener noreferrer" className="bg-primary hover:bg-primary/90 text-white font-bold h-12 px-8 rounded-xl shadow-lg transition-transform hover:-translate-y-1 w-full sm:w-auto flex items-center justify-center">
+                    Satış Sayfasına Git
+                  </a>
+                )}
+              </div>
+            </div>
+
+            {/* FİYAT GEÇMİŞİ PLANI */}
+            <div className="bg-white p-6 rounded-2xl mb-8 border border-slate-100 shadow-sm relative overflow-hidden">
+                <div className="absolute top-0 left-0 w-1.5 h-full bg-gradient-to-b from-teal-400 to-emerald-600"></div>
+                <h3 className="text-xl font-bold flex items-center gap-2 mb-2 text-slate-800">
+                   📉 Fiyat Geçmişi Analizi
+                </h3>
+                <p className="text-sm text-slate-500 mb-4">Bu ürünün son zamanlardaki fiyat değişimini inceleyerek doğru zamanda alışveriş yapın.</p>
+                <PriceHistoryChart historyData={product.price_history || []} />
             </div>
 
             <h2 className="text-xl font-bold mb-4 flex items-center gap-2">

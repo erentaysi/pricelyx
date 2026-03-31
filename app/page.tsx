@@ -16,6 +16,11 @@ export default async function Home() {
     .eq('is_trend', true)
     .limit(8);
 
+  // Dinamik Sayaçlar için veritabanı sorguları (Sadece rakamları çeker, datayı indirmez)
+  const { count: productCount } = await supabase.from('products').select('*', { count: 'exact', head: true });
+  const { count: vendorCount } = await supabase.from('vendors').select('*', { count: 'exact', head: true });
+  const { count: priceCount } = await supabase.from('product_prices').select('*', { count: 'exact', head: true });
+
   const categories = [
     { id: 1, name: "Akıllı Telefon", icon: "📱", productCount: 5420, slug: "akilli-telefon" },
     { id: 2, name: "Bilgisayar & Laptop", icon: "💻", productCount: 3200, slug: "bilgisayar-laptop" },
@@ -48,13 +53,13 @@ export default async function Home() {
                 </div>
                 <div className="grid grid-cols-3 gap-4 mt-12 max-w-2xl mx-auto">
                     <div className="text-center">
-                        <div className="text-3xl font-bold">500K+</div><div className="text-white/80 text-sm">Ürün</div>
+                        <div className="text-3xl font-bold">{productCount || 0}+</div><div className="text-white/80 text-sm">Ürün</div>
                     </div>
                     <div className="text-center">
-                        <div className="text-3xl font-bold">50+</div><div className="text-white/80 text-sm">Mağaza</div>
+                        <div className="text-3xl font-bold">{vendorCount || 0}+</div><div className="text-white/80 text-sm">Mağaza</div>
                     </div>
                     <div className="text-center">
-                        <div className="text-3xl font-bold">%40</div><div className="text-white/80 text-sm">Tasarruf</div>
+                        <div className="text-3xl font-bold">{priceCount || 0}+</div><div className="text-white/80 text-sm">Karşılaştırılan Fiyat</div>
                     </div>
                 </div>
             </div>

@@ -80,7 +80,7 @@ function Footer() {
   return (
     <footer className="bg-dark text-white py-12">
         <div className="container mx-auto px-4">
-            <div className="grid md:grid-cols-4 gap-8 mb-8">
+            <div className="grid md:grid-cols-3 gap-8 mb-8">
                 <div>
                     <svg width="140" height="35" viewBox="0 0 200 50" xmlns="http://www.w3.org/2000/svg" className="mb-4">
                         <defs>
@@ -100,27 +100,18 @@ function Footer() {
                     <h4 className="font-semibold mb-4">Hızlı Linkler</h4>
                     <ul className="space-y-2 text-gray-400">
                         <li><Link href="/hakkimizda" className="hover:text-white transition">Hakkımızda</Link></li>
-                        <li><Link href="#" className="hover:text-white transition">İletişim</Link></li>
-                        <li><Link href="#" className="hover:text-white transition">Kariyer</Link></li>
+                        <li><Link href="/iletisim" className="hover:text-white transition">İletişim</Link></li>
+                        <li><Link href="/kariyer" className="hover:text-white transition">Kariyer</Link></li>
                     </ul>
                 </div>
                 
                 <div>
                     <h4 className="font-semibold mb-4">Yardım</h4>
                     <ul className="space-y-2 text-gray-400">
-                        <li><Link href="#" className="hover:text-white transition">SSS</Link></li>
-                        <li><Link href="#" className="hover:text-white transition">Kullanım Koşulları</Link></li>
-                        <li><Link href="#" className="hover:text-white transition">Gizlilik Politikası</Link></li>
+                        <li><Link href="/sss" className="hover:text-white transition">SSS</Link></li>
+                        <li><Link href="/sartlar" className="hover:text-white transition">Kullanım Koşulları</Link></li>
+                        <li><Link href="/gizlilik" className="hover:text-white transition">Gizlilik Politikası</Link></li>
                     </ul>
-                </div>
-                
-                <div>
-                    <h4 className="font-semibold mb-4">Bizi Takip Edin</h4>
-                    <div className="flex gap-4">
-                        <a href="#" className="w-10 h-10 bg-white/10 rounded-full flex items-center justify-center hover:bg-primary transition">f</a>
-                        <a href="#" className="w-10 h-10 bg-white/10 rounded-full flex items-center justify-center hover:bg-primary transition">t</a>
-                        <a href="#" className="w-10 h-10 bg-white/10 rounded-full flex items-center justify-center hover:bg-primary transition">in</a>
-                    </div>
                 </div>
             </div>
             
