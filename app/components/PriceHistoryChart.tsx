@@ -77,7 +77,7 @@ export default function PriceHistoryChart({ historyData }: Props) {
           />
           <Tooltip 
             contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1)', fontWeight: 'bold' }}
-            formatter={(value: number) => [`${value} TL`, 'Fiyat']}
+            formatter={(value: any) => [`${value} TL`, 'Fiyat']}
             labelStyle={{ color: '#64748b', marginBottom: '4px' }}
           />
           <Line 
