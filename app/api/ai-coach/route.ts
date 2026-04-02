@@ -47,14 +47,29 @@ Piinti'nin n8n ve Apify kullanarak Amazon, Trendyol gibi devleri taradığını 
     const data = await response.json();
     
     if (data.error) {
-      console.error('Gemini API Error:', data.error);
+      console.error('Gemini API Error Details:', JSON.stringify(data.error, null, 2));
+      
+      // Provide more specific feedback if possible
+      let errorMsg = 'Üzgünüm kankam, şu an kafam biraz karışık (API Hatası). Biraz sonra tekrar dener misin? 🤖';
+      if (data.error.message?.includes('API key not valid')) {
+        errorMsg = 'Kankam, API anahtarın geçersiz görünüyor. Vercel ayarlarını kontrol eder misin? 🔑';
+      }
+      
       return NextResponse.json({ 
         role: 'bot', 
-        text: 'Üzgünüm kankam, şu an kafam biraz karışık (API Hatası). Biraz sonra tekrar dener misin? 🤖' 
+        text: errorMsg 
       });
     }
 
-    const botResponse = data.candidates?.[0]?.content?.parts?.[0]?.text || "Anlayamadım kankam, tekrar söyler misin?";
+    const botResponse = data.candidates?.[0]?.content?.parts?.[0]?.text;
+
+    if (!botResponse) {
+      console.warn('Empty Gemini response:', data);
+      return NextResponse.json({ 
+        role: 'bot', 
+        text: 'Kankam şu an ne diyeceğimi bilemedim, bir daha sorsana? 😅' 
+      });
+    }
 
     return NextResponse.json({ 
       role: 'bot', 
