@@ -2,6 +2,7 @@ import Link from "next/link";
 import { supabase } from "@/lib/supabase";
 import FilterSidebar from "./FilterSidebar";
 import { Metadata } from 'next';
+import { analyzePriceTrend } from "@/lib/analytics";
 
 export const dynamic = 'force-dynamic';
 
@@ -35,7 +36,8 @@ export default async function UrunlerPage({ searchParams }: { searchParams: { q?
     *,
     brands!inner(name),
     categories!inner(name, slug),
-    product_prices(price)
+    product_prices(price),
+    price_history(price, recorded_at)
   `);
 
   if (q) {
@@ -80,11 +82,17 @@ export default async function UrunlerPage({ searchParams }: { searchParams: { q?
              const prices = product.product_prices || [];
              const minPrice = prices.length > 0 ? Math.min(...prices.map((p: any) => p.price)) : 0;
              const formatPrice = (p: number) => new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY', minimumFractionDigits: 0 }).format(p);
+             const analytics = analyzePriceTrend(product.price_history || [], minPrice);
 
              return (
               <Link href={`/urun/${product.id}`} key={product.id}>
-                <div className="bg-white border text-center border-slate-100 rounded-2xl p-5 hover:shadow-xl hover:border-brand/30 transition-all cursor-pointer group flex flex-col h-full">
+                <div className="bg-white border text-center border-slate-100 rounded-2xl p-5 hover:shadow-xl hover:border-brand/30 transition-all cursor-pointer group flex flex-col h-full overflow-hidden">
                   <div className="bg-slate-50 rounded-xl h-48 mb-4 flex items-center justify-center p-4 overflow-hidden relative">
+                    {/* Analytics Badge */}
+                    <div className={`absolute top-2 right-2 ${analytics.color} text-white text-[9px] font-black px-2 py-1 rounded-full z-10 uppercase tracking-tighter`}>
+                      {analytics.icon} {analytics.message}
+                    </div>
+
                     {(product.image_url?.startsWith('http') || product.image_url?.startsWith('data:image')) ? (
                       <img src={product.image_url} alt={product.title} className="max-w-full max-h-full object-contain group-hover:scale-110 transition-transform duration-300" />
                     ) : (

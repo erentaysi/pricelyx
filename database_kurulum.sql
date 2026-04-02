@@ -62,6 +62,15 @@ CREATE TABLE price_history (
   recorded_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
+CREATE TABLE product_reviews (
+  id SERIAL PRIMARY KEY,
+  product_id UUID REFERENCES products(id) ON DELETE CASCADE,
+  user_name VARCHAR(255),
+  rating INT,
+  comment TEXT,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
 -- Test Verisi Ekleme (Sistem calismaya basladiginda sadece Amazon'u dahil edecegiz simdilik)
 INSERT INTO vendors (name, logo, color) VALUES ('Amazon TR', '📦', '#FF9900');
 INSERT INTO categories (name, slug, icon) VALUES ('Akıllı Telefon', 'akilli-telefon', '📱');

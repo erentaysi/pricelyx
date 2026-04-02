@@ -1,6 +1,21 @@
 import Link from 'next/link';
 import { supabase } from '@/lib/supabase';
 import SearchForm from '@/app/components/SearchForm';
+import { 
+  Smartphone, 
+  Laptop, 
+  Shirt, 
+  Home as HomeIcon, 
+  Cpu, 
+  Sparkles, 
+  Dribbble, 
+  Book, 
+  ShieldCheck, 
+  Zap, 
+  Database,
+  Package
+} from 'lucide-react';
+import { analyzePriceTrend } from '@/lib/analytics';
 
 export const dynamic = 'force-dynamic';
 
@@ -11,32 +26,32 @@ export default async function Home() {
     .select(`
       id, title, image_url, rating, reviews_count, is_trend,
       brands (name),
-      product_prices (price, original_price)
+      product_prices (price, original_price),
+      price_history (price, recorded_at)
     `)
     .eq('is_trend', true)
     .limit(8);
 
-  // Dinamik Sayaçlar için veritabanı sorguları (Sadece rakamları çeker, datayı indirmez)
+  // Dinamik Sayaçlar için veritabanı sorguları
   const { count: productCount } = await supabase.from('products').select('*', { count: 'exact', head: true });
   const { count: vendorCount } = await supabase.from('vendors').select('*', { count: 'exact', head: true });
   const { count: priceCount } = await supabase.from('product_prices').select('*', { count: 'exact', head: true });
 
   const categories = [
-    { id: 1, name: "Akıllı Telefon", icon: "📱", productCount: 5420, slug: "akilli-telefon" },
-    { id: 2, name: "Bilgisayar & Laptop", icon: "💻", productCount: 3200, slug: "bilgisayar-laptop" },
-    { id: 3, name: "Moda & Giyim", icon: "👕", productCount: 12500, slug: "moda-giyim" },
-    { id: 4, name: "Ev & Yaşam", icon: "🏠", productCount: 8900, slug: "ev-yasam" },
-    { id: 5, name: "Elektronik", icon: "🎮", productCount: 6700, slug: "elektronik" },
-    { id: 6, name: "Kozmetik", icon: "💄", productCount: 4300, slug: "kozmetik" },
-    { id: 7, name: "Spor & Outdoor", icon: "⚽", productCount: 3800, slug: "spor-outdoor" },
-    { id: 8, name: "Kitap & Hobi", icon: "📚", productCount: 9200, slug: "kitap-hobi" }
+    { id: 1, name: "Akıllı Telefon", icon: <Smartphone className="w-8 h-8" />, productCount: 5420, slug: "akilli-telefon", color: "bg-blue-50 text-blue-600" },
+    { id: 2, name: "Bilgisayar & Laptop", icon: <Laptop className="w-8 h-8" />, productCount: 3200, slug: "bilgisayar-laptop", color: "bg-indigo-50 text-indigo-600" },
+    { id: 3, name: "Moda & Giyim", icon: <Shirt className="w-8 h-8" />, productCount: 12500, slug: "moda-giyim", color: "bg-pink-50 text-pink-600" },
+    { id: 4, name: "Ev & Yaşam", icon: <HomeIcon className="w-8 h-8" />, productCount: 8900, slug: "ev-yasam", color: "bg-green-50 text-green-600" },
+    { id: 5, name: "Elektronik", icon: <Cpu className="w-8 h-8" />, productCount: 6700, slug: "elektronik", color: "bg-purple-50 text-purple-600" },
+    { id: 6, name: "Kozmetik", icon: <Sparkles className="w-8 h-8" />, productCount: 4300, slug: "kozmetik", color: "bg-rose-50 text-rose-600" },
+    { id: 7, name: "Spor & Outdoor", icon: <Dribbble className="w-8 h-8" />, productCount: 3800, slug: "spor-outdoor", color: "bg-orange-50 text-orange-600" },
+    { id: 8, name: "Kitap & Hobi", icon: <Book className="w-8 h-8" />, productCount: 9200, slug: "kitap-hobi", color: "bg-amber-50 text-amber-600" }
   ];
 
   function formatPrice(price: number) {
     return new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY', minimumFractionDigits: 0 }).format(price);
   }
 
-  // Ensure products list is robust
   const productsList = dbProducts || [];
 
   return (
@@ -59,7 +74,7 @@ export default async function Home() {
                         <div className="text-3xl font-bold">{vendorCount || 0}+</div><div className="text-white/80 text-sm">Mağaza</div>
                     </div>
                     <div className="text-center">
-                        <div className="text-3xl font-bold">{priceCount || 0}+</div><div className="text-white/80 text-sm">Karşılaştırılan Fiyat</div>
+                        <div className="text-3xl font-bold">{priceCount || 0}+</div><div className="text-white/80 text-sm">Fiyat Karşılaştırması</div>
                     </div>
                 </div>
             </div>
@@ -68,23 +83,31 @@ export default async function Home() {
 
       <section className="py-16 bg-white">
           <div className="container mx-auto px-4">
-              <h2 className="text-3xl md:text-4xl font-bold text-center mb-12 text-gray-800">Popüler Kategoriler</h2>
+              <div className="flex flex-col md:flex-row md:items-end justify-between mb-12 gap-4">
+                <div>
+                  <h2 className="text-3xl md:text-4xl font-bold text-gray-800 mb-2">Popüler Kategoriler</h2>
+                  <p className="text-gray-500">İhtiyacın olan her şey burada.</p>
+                </div>
+                <Link href="/urunler" className="text-primary font-semibold hover:underline">Tümünü Gör →</Link>
+              </div>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
                   {categories.map(cat => (
-                      <Link href={`/urunler?cat=${cat.slug}`} key={cat.id} className="bg-white rounded-xl p-6 text-center hover:shadow-lg transition-all duration-300 hover:-translate-y-2 border border-slate-100">
-                          <div className="text-5xl mb-3 leading-tight">{cat.icon}</div>
-                          <h3 className="font-semibold text-gray-800 mb-1">{cat.name}</h3>
-                          <p className="text-sm text-gray-500">{cat.productCount.toLocaleString('tr-TR')} ürün</p>
+                      <Link href={`/urunler?cat=${cat.slug}`} key={cat.id} className="group bg-white rounded-2xl p-8 text-center hover:shadow-2xl transition-all duration-500 hover:-translate-y-2 border border-slate-100 flex flex-col items-center">
+                          <div className={`w-16 h-16 rounded-2xl ${cat.color} flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-500 shadow-sm`}>
+                              {cat.icon}
+                          </div>
+                          <h3 className="font-bold text-gray-800 mb-1 text-lg">{cat.name}</h3>
+                          <p className="text-sm text-gray-400 font-medium">{cat.productCount.toLocaleString('tr-TR')} ürün</p>
                       </Link>
                   ))}
               </div>
           </div>
       </section>
 
-      {/* Trending Products (Gercek Veri) */}
+      {/* Trending Products */}
       <section className="py-16 bg-gray-50">
           <div className="container mx-auto px-4">
-              <h2 className="text-3xl md:text-4xl font-bold text-center mb-12 text-gray-800">Trend Ürünler (Veritabanı)</h2>
+              <h2 className="text-3xl md:text-4xl font-bold text-center mb-12 text-gray-800">Trend Ürünler</h2>
               
               {productsList.length === 0 ? (
                 <div className="text-center py-10">
@@ -95,31 +118,45 @@ export default async function Home() {
                     {productsList.map((product: any) => {
                         const prices = product.product_prices || [];
                         const minPrice = prices.length > 0 ? Math.min(...prices.map((p: any) => p.price)) : 0;
+                        const analytics = analyzePriceTrend(product.price_history || [], minPrice);
                         
                         return (
-                            <Link href={`/urun/${product.id}`} key={product.id} className="bg-white rounded-xl shadow-sm border border-slate-100 hover:shadow-xl transition-all duration-300 overflow-hidden">
-                                <div className="relative h-40 bg-slate-100 flex items-center justify-center text-6xl overflow-hidden p-2">
-                                  {(!product.image_url) ? (
-                                    <span>📦</span>
+                            <Link href={`/urun/${product.id}`} key={product.id} className="group bg-white rounded-2xl shadow-sm border border-slate-100 hover:shadow-2xl transition-all duration-500 overflow-hidden flex flex-col">
+                                <div className="relative h-56 bg-slate-50 flex items-center justify-center overflow-hidden p-6">
+                                  {/* Dynamic Analytics Badge */}
+                                  <div className={`absolute top-4 right-4 ${analytics.color} text-white text-[10px] font-black px-3 py-1 rounded-full shadow-lg z-10 uppercase tracking-widest flex items-center gap-1 scale-90 origin-right group-hover:scale-100 transition-transform`}>
+                                    <span>{analytics.icon}</span> {analytics.message}
+                                  </div>
+
+                                  {(!product.image_url || product.image_url === '📦') ? (
+                                    <Package className="w-20 h-20 text-slate-200" />
                                   ) : (product.image_url?.startsWith('http') || product.image_url?.includes('data:image')) ? (
-                                    <img src={product.image_url} alt={product.title} className="max-w-full max-h-full object-contain" />
+                                    <img src={product.image_url} alt={product.title} className="max-w-full max-h-full object-contain group-hover:scale-110 transition-transform duration-500" />
                                   ) : (
-                                    <span className="break-all text-center text-4xl line-clamp-3 overflow-hidden">{product.image_url}</span>
+                                    <span className="text-4xl">{product.image_url}</span>
                                   )}
-                                  <div className="absolute top-2 left-2 bg-gradient-to-r from-primary to-accent text-white text-xs font-bold px-3 py-1 rounded-full shadow z-10">🔥 Trend</div>
+                                  <div className="absolute top-4 left-4 bg-white/90 backdrop-blur-sm text-primary text-[10px] font-black px-3 py-1 rounded-full shadow-sm border border-slate-100 z-10 uppercase tracking-widest">🔥 Trend</div>
                                 </div>
-                                <div className="p-4">
-                                    <div className="text-xs text-gray-500 mb-1">{product.brands?.name || 'Bilinmiyor'}</div>
-                                    <h3 className="font-semibold text-gray-800 mb-2 line-clamp-2 h-10 text-sm">{product.title}</h3>
-                                    <div className="flex items-center gap-1 mb-2 text-xs">
-                                        <span className="text-yellow-400">⭐</span>
-                                        <span className="font-semibold">{product.rating}</span>
-                                        <span className="text-gray-400">({product.reviews_count})</span>
+                                <div className="p-6 flex flex-col flex-1">
+                                    <div className="text-[10px] font-bold text-primary uppercase tracking-widest mb-1">{product.brands?.name || 'Bilinmiyor'}</div>
+                                    <h3 className="font-bold text-gray-800 mb-3 line-clamp-2 h-12 text-base leading-tight group-hover:text-primary transition-colors">{product.title}</h3>
+                                    <div className="flex items-center gap-1.5 mb-4 text-xs">
+                                        <div className="flex text-yellow-400">
+                                          {[...Array(5)].map((_, i) => (
+                                            <span key={i}>{i < Math.floor(product.rating) ? '★' : '☆'}</span>
+                                          ))}
+                                        </div>
+                                        <span className="font-bold text-gray-700">{product.rating}</span>
+                                        <span className="text-gray-400 font-medium">({product.reviews_count})</span>
                                     </div>
-                                    <div className="flex items-baseline gap-2 mb-2">
-                                        <span className="text-xl font-bold text-primary">{minPrice > 0 ? formatPrice(minPrice) : 'Fiyat Yok'}</span>
+                                    <div className="mt-auto">
+                                      <div className="flex items-baseline gap-2 mb-3">
+                                          <span className="text-2xl font-black text-gray-900">{minPrice > 0 ? formatPrice(minPrice) : 'Fiyat Yok'}</span>
+                                      </div>
+                                      <div className="text-[11px] font-bold text-gray-400 flex items-center gap-2 pt-3 border-t border-slate-100">
+                                        <Database className="w-3 h-3" /> {prices.length} farklı satıcıda karşılaştırıldı
+                                      </div>
                                     </div>
-                                    <div className="text-xs text-gray-600 border-t pt-2 mt-2">🏪 {prices.length} mağazada</div>
                                 </div>
                             </Link>
                         );
@@ -130,23 +167,29 @@ export default async function Home() {
       </section>
 
       {/* Features Section */}
-      <section className="py-16 bg-white">
+      <section className="py-24 bg-white">
         <div className="container mx-auto px-4">
-            <div className="grid md:grid-cols-3 gap-8">
-                <div className="text-center p-6 bg-slate-50 border border-slate-100 rounded-2xl">
-                    <div className="w-16 h-16 bg-primary rounded-full flex items-center justify-center mx-auto mb-4 text-white text-2xl font-bold">✓</div>
-                    <h3 className="text-xl font-semibold mb-2">Güvenilir Karşılaştırma</h3>
-                    <p className="text-gray-600">Apify & n8n mimarisiyle güncel ve kesintisiz fiyat takibi.</p>
+            <div className="grid md:grid-cols-3 gap-12">
+                <div className="text-center group">
+                    <div className="w-20 h-20 bg-blue-50 text-primary rounded-3xl flex items-center justify-center mx-auto mb-8 group-hover:rotate-6 transition-transform duration-500 shadow-sm border border-blue-100/50">
+                        <ShieldCheck className="w-10 h-10" />
+                    </div>
+                    <h3 className="text-xl font-bold mb-4 text-gray-900 tracking-tight">Güvenilir Karşılaştırma</h3>
+                    <p className="text-gray-500 leading-relaxed max-w-xs mx-auto">Apify & n8n mimarisiyle güncel ve kesintisiz fiyat takibi ile asla yanılmazsın.</p>
                 </div>
-                <div className="text-center p-6 bg-slate-50 border border-slate-100 rounded-2xl">
-                    <div className="w-16 h-16 bg-accent rounded-full flex items-center justify-center mx-auto mb-4 text-white text-2xl font-bold">₺</div>
-                    <h3 className="text-xl font-semibold mb-2">Supabase Altyapısı</h3>
-                    <p className="text-gray-600">Devasa veriler bile PostgreSQL gücü sayesinde anında karşında.</p>
+                <div className="text-center group">
+                    <div className="w-20 h-20 bg-purple-50 text-accent rounded-3xl flex items-center justify-center mx-auto mb-8 group-hover:-rotate-6 transition-transform duration-500 shadow-sm border border-purple-100/50">
+                        <Database className="w-10 h-10" />
+                    </div>
+                    <h3 className="text-xl font-bold mb-4 text-gray-900 tracking-tight">Supabase Altyapısı</h3>
+                    <p className="text-gray-500 leading-relaxed max-w-xs mx-auto">Yüz binlerce ürün arasından milisaniyeler içinde sana en uygununu buluruz.</p>
                 </div>
-                <div className="text-center p-6 bg-slate-50 border border-slate-100 rounded-2xl">
-                    <div className="w-16 h-16 bg-primary rounded-full flex items-center justify-center mx-auto mb-4 text-white text-2xl font-bold">⚡</div>
-                    <h3 className="text-xl font-semibold mb-2">Hızlı ve Kolay</h3>
-                    <p className="text-gray-600">Saniyeler içinde yüzlerce mağazayı karşılaştır</p>
+                <div className="text-center group">
+                    <div className="w-20 h-20 bg-amber-50 text-amber-600 rounded-3xl flex items-center justify-center mx-auto mb-8 group-hover:rotate-6 transition-transform duration-500 shadow-sm border border-amber-100/50">
+                        <Zap className="w-10 h-10" />
+                    </div>
+                    <h3 className="text-xl font-bold mb-4 text-gray-900 tracking-tight">Anlık Veri Aktarımı</h3>
+                    <p className="text-gray-500 leading-relaxed max-w-xs mx-auto">Pazar yerlerindeki fiyat değişimlerini anlık olarak yakalar ve seni uyarırız.</p>
                 </div>
             </div>
         </div>

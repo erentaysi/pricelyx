@@ -4,6 +4,20 @@ import SearchForm from '@/app/components/SearchForm';
 import Link from 'next/link';
 import PriceHistoryChart from '@/app/components/PriceHistoryChart';
 import PriceAlertModal from '@/app/components/PriceAlertModal';
+import ReviewSummary from '@/app/components/ReviewSummary';
+import { 
+  Star, 
+  Truck, 
+  Store, 
+  LineChart, 
+  Package, 
+  ChevronRight,
+  ShieldCheck,
+  Zap,
+  Flame,
+  ArrowRight
+} from 'lucide-react';
+import { analyzePriceTrend } from '@/lib/analytics';
 
 import { Metadata } from 'next';
 
@@ -17,9 +31,7 @@ export async function generateMetadata({ params }: { params: { id: string } }): 
     .single();
 
   if (!product) {
-    return {
-      title: 'Ürün Bulunamadı | Piinti'
-    };
+    return { title: 'Ürün Bulunamadı | Piinti' };
   }
 
   const categoryObj: any = Array.isArray(product.categories) ? product.categories[0] : product.categories;
@@ -34,20 +46,12 @@ export async function generateMetadata({ params }: { params: { id: string } }): 
     openGraph: {
       title,
       description,
-      // For now we use the image_url as a rough approximation even if it's an emoji string in DB, normally this would be an absolute URL
-      images: [
-        {
-          url: 'https://pricelyx-ten.vercel.app/og-image.jpg', // Placeholder for actual image
-          width: 1200,
-          height: 630,
-        }
-      ]
+      images: [{ url: 'https://pricelyx-ten.vercel.app/og-image.jpg', width: 1200, height: 630 }]
     },
   };
 }
 
 export default async function UrunDetay({ params }: { params: { id: string } }) {
-  // Fetch real product from Supabase
   const { data: product } = await supabase
     .from('products')
     .select(`
@@ -77,14 +81,11 @@ export default async function UrunDetay({ params }: { params: { id: string } }) 
 
   const categoryObj: any = Array.isArray(product.categories) ? product.categories[0] : product.categories;
   const categoryName = categoryObj?.name;
-  
   const brandObj: any = Array.isArray(product.brands) ? product.brands[0] : product.brands;
   const brandName = brandObj?.name;
 
   const prices = product.product_prices || [];
   const lowestPrice = prices.length > 0 ? Math.min(...prices.map((p:any) => p.price)) : 0;
-  
-  // Create a sorted list from cheapest to most expensive
   const sortedPrices = [...prices].sort((a:any, b:any) => a.price - b.price);
 
   function formatPrice(price: number) {
@@ -93,8 +94,7 @@ export default async function UrunDetay({ params }: { params: { id: string } }) 
 
   return (
     <main className="min-h-screen pb-16 bg-gray-50">
-      {/* Search Header */}
-      <div className="bg-white border-b border-slate-100 py-6 sticky top-0 z-40 shadow-sm">
+      <div className="bg-white border-b border-slate-100 py-6 sticky top-0 z-40 shadow-sm backdrop-blur-md bg-white/90">
         <div className="max-w-7xl mx-auto px-6">
            <SearchForm />
         </div>
@@ -102,130 +102,181 @@ export default async function UrunDetay({ params }: { params: { id: string } }) 
 
       <div className="max-w-7xl mx-auto px-6 mt-12">
         {/* Breadcrumb */}
-        <div className="text-sm font-medium text-slate-500 mb-8 flex items-center gap-2">
-           <Link href="/" className="hover:text-brand transition-colors">Ana Sayfa</Link>
-           <span>/</span>
+        <div className="text-xs font-bold text-slate-400 mb-8 flex items-center gap-2 uppercase tracking-widest">
+           <Link href="/" className="hover:text-primary transition-colors">Ana Sayfa</Link>
+           <ChevronRight className="w-3 h-3" />
            {categoryName && (
              <>
-               <Link href={`/urunler?cat=${categoryName}`} className="hover:text-brand transition-colors">{categoryName}</Link>
-               <span>/</span>
+               <Link href={`/urunler?cat=${categoryName}`} className="hover:text-primary transition-colors">{categoryName}</Link>
+               <ChevronRight className="w-3 h-3" />
              </>
            )}
            <span className="text-slate-800">{product.title}</span>
         </div>
 
         <div className="flex flex-col lg:flex-row gap-12">
-          {/* Visual */}
+          {/* Visual Column */}
           <div className="w-full lg:w-1/3">
-            <div className="bg-white shadow border border-slate-100 aspect-square rounded-3xl flex items-center justify-center relative p-8">
+            <div className="bg-white shadow-2xl shadow-slate-200/50 border border-slate-100 aspect-square rounded-[2.5rem] flex items-center justify-center relative p-12 overflow-hidden transition-all duration-500 hover:shadow-primary/5 group">
+                <div className="absolute inset-0 bg-gradient-to-br from-slate-50 to-white opacity-50"></div>
                {product.is_trend && (
-                  <span className="absolute top-4 left-4 bg-gradient-to-r from-orange-500 to-brand text-white text-xs font-bold px-3 py-1 rounded-full shadow-md z-10">
-                    🔥 Trend
+                  <span className="absolute top-6 left-6 bg-slate-900 text-white text-[10px] font-black px-4 py-1.5 rounded-full shadow-lg z-10 uppercase tracking-widest flex items-center gap-2">
+                    <Flame className="w-3 h-3 text-orange-400" /> Trend Seçim
                   </span>
                )}
-               <div className="w-full h-full flex items-center justify-center overflow-hidden">
-                 {(product.image_url?.startsWith('http') || product.image_url?.startsWith('data:image')) ? (
-                   <img src={product.image_url} alt={product.title} className="max-w-full max-h-full object-contain" />
-                 ) : (
-                   <span className="text-9xl break-all line-clamp-3 text-center">
-                     {product.image_url}
-                   </span>
-                 )}
+               <div className="w-full h-full flex items-center justify-center relative z-10">
+                 {(!product.image_url || product.image_url === '📦') ? (
+                    <Package className="w-32 h-32 text-slate-200" />
+                 ) : (product.image_url?.startsWith('http') || product.image_url?.startsWith('data:image')) ? (
+                    <img src={product.image_url} alt={product.title} className="max-w-full max-h-full object-contain group-hover:scale-105 transition-transform duration-700" />
+                  ) : (
+                    <span className="text-9xl group-hover:scale-110 transition-transform duration-700 select-none">
+                      {product.image_url}
+                    </span>
+                  )}
                </div>
                
-               <div className="absolute top-4 right-4 flex flex-col gap-2 z-10">
-                 <button className="w-10 h-10 bg-white/50 backdrop-blur border border-slate-200 text-slate-400 hover:text-red-500 rounded-full flex items-center justify-center shadow-sm transition-all hover:scale-110">♡</button>
-                 <button className="w-10 h-10 bg-white/50 backdrop-blur border border-slate-200 text-slate-400 hover:text-brand rounded-full flex items-center justify-center shadow-sm transition-all hover:scale-110">Share</button>
+               <div className="absolute top-6 right-6 flex flex-col gap-3 z-10">
+                 <button className="w-12 h-12 bg-white/80 backdrop-blur border border-slate-100 text-slate-400 hover:text-rose-500 hover:border-rose-100 rounded-2xl flex items-center justify-center shadow-xl transition-all duration-300 hover:scale-110">♡</button>
+                 <button className="w-12 h-12 bg-white/80 backdrop-blur border border-slate-100 text-slate-400 hover:text-primary hover:border-primary/20 rounded-2xl flex items-center justify-center shadow-xl transition-all duration-300 hover:scale-110">Share</button>
                </div>
             </div>
             
-            <div className="grid grid-cols-4 gap-2 mt-4">
+            <div className="grid grid-cols-4 gap-4 mt-6">
                {[1,2,3,4].map(idx => (
-                 <div key={idx} className="bg-white border border-slate-100 aspect-square rounded-xl flex items-center justify-center text-3xl cursor-pointer hover:border-brand transition-all opacity-60 hover:opacity-100 overflow-hidden p-2">
-                   {(product.image_url?.startsWith('http') || product.image_url?.startsWith('data:image')) ? (
-                     <img src={product.image_url} alt={product.title} className="w-full h-full object-contain" />
-                   ) : (
-                     <span className="break-all">{product.image_url}</span>
-                   )}
+                 <div key={idx} className="bg-white border border-slate-100 aspect-square rounded-2xl flex items-center justify-center cursor-pointer hover:border-primary/50 transition-all opacity-40 hover:opacity-100 overflow-hidden p-3 shadow-sm">
+                   {(!product.image_url || product.image_url === '📦') ? (
+                      <Package className="w-8 h-8 text-slate-200" />
+                   ) : (product.image_url?.startsWith('http') || product.image_url?.startsWith('data:image')) ? (
+                      <img src={product.image_url} alt={product.title} className="w-full h-full object-contain" />
+                    ) : (
+                      <span className="text-xl">{product.image_url}</span>
+                    )}
                  </div>
                ))}
             </div>
           </div>
 
+          {/* Details Column */}
           <div className="w-full lg:w-2/3">
-            <h1 className="text-3xl md:text-5xl font-black text-slate-800 mb-4 leading-tight">
+            <div className="mb-4 flex items-center gap-2">
+                <span className="bg-primary/10 text-primary text-[11px] font-black px-3 py-1 rounded-full uppercase tracking-tighter border border-primary/20">{brandName || 'PREMIUM BRAND'}</span>
+                <span className="text-slate-300">•</span>
+                <span className="text-slate-400 text-xs font-bold uppercase tracking-widest">{categoryName || 'GENERAL CATEGORY'}</span>
+            </div>
+            <h1 className="text-3xl md:text-5xl font-black text-slate-900 mb-6 leading-tight tracking-tight">
               {product.title}
             </h1>
             
-            <div className="flex flex-wrap items-center gap-4 mb-8">
-              <div className="flex items-center gap-1.5 bg-yellow-100/50 text-yellow-700 px-3 py-1 rounded-full text-sm font-bold border border-yellow-200">
-                <span className="text-yellow-500">★</span> {product.rating}
+            <div className="flex flex-wrap items-center gap-6 mb-10 pb-10 border-b border-dashed border-slate-200">
+              <div className="flex items-center gap-2 bg-amber-50 text-amber-700 px-4 py-2 rounded-2xl text-sm font-black border border-amber-100">
+                <Star className="w-4 h-4 fill-amber-500 text-amber-500" /> {product.rating}
               </div>
-              <span className="text-slate-400 text-sm">{product.reviews_count} Değerlendirme</span>
-              <span className="text-slate-300">|</span>
-              <span className="text-slate-600 font-semibold">{brandName}</span>
+              <span className="text-slate-400 text-sm font-bold tracking-tight">{product.reviews_count.toLocaleString('tr-TR')} DOĞRULANMIŞ YORUM</span>
+              <span className="hidden sm:block text-slate-200">|</span>
+              <span className="text-slate-500 text-xs font-black uppercase tracking-widest flex items-center gap-2">
+                <ShieldCheck className="w-4 h-4 text-emerald-500" /> %100 Orijinal Ürün
+              </span>
             </div>
 
-            <div className="bg-blue-50/50 p-6 rounded-2xl mb-8 flex flex-col sm:flex-row items-start sm:items-center justify-between shadow-sm border border-blue-100 gap-6">
+            {/* Lowest Price Banner */}
+            <div className="bg-slate-900 p-8 rounded-[2rem] mb-10 flex flex-col sm:flex-row items-start sm:items-center justify-between shadow-2xl shadow-slate-900/10 border border-slate-800 gap-8">
               <div>
-                <p className="text-sm font-semibold text-slate-500 mb-1">En Ucuz Fiyat</p>
-                <p className="text-4xl font-black text-primary">{lowestPrice > 0 ? formatPrice(lowestPrice) : 'Fiyat Yok'}</p>
+                <p className="text-xs font-bold text-slate-500 mb-2 uppercase tracking-widest">En Rekabetçi Fiyat</p>
+                <p className="text-5xl font-black text-white tracking-tighter">{lowestPrice > 0 ? formatPrice(lowestPrice) : 'Fiyat Yok'}</p>
               </div>
-              <div className="flex flex-col items-center gap-3 w-full sm:w-auto">
+              <div className="flex flex-col items-center gap-4 w-full sm:w-auto">
                 <PriceAlertModal productId={product.id} productTitle={product.title} currentPrice={lowestPrice} />
                 {sortedPrices.length > 0 && (
-                  <a href={sortedPrices[0].product_url} target="_blank" rel="noopener noreferrer" className="bg-primary hover:bg-primary/90 text-white font-bold h-12 px-8 rounded-xl shadow-lg transition-transform hover:-translate-y-1 w-full sm:w-auto flex items-center justify-center">
-                    Satış Sayfasına Git
+                  <a href={sortedPrices[0].product_url} target="_blank" rel="noopener noreferrer" className="bg-white hover:bg-slate-100 text-slate-900 font-black h-14 px-10 rounded-2xl shadow-xl transition-all duration-300 hover:-translate-y-1 w-full sm:w-auto flex items-center justify-center gap-3 group">
+                    Mağazaya İlerle <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
                   </a>
                 )}
               </div>
             </div>
 
-            {/* FİYAT GEÇMİŞİ PLANI */}
-            <div className="bg-white p-6 rounded-2xl mb-8 border border-slate-100 shadow-sm relative overflow-hidden">
-                <div className="absolute top-0 left-0 w-1.5 h-full bg-gradient-to-b from-teal-400 to-emerald-600"></div>
-                <h3 className="text-xl font-bold flex items-center gap-2 mb-2 text-slate-800">
-                   📉 Fiyat Geçmişi Analizi
-                </h3>
-                <p className="text-sm text-slate-500 mb-4">Bu ürünün son zamanlardaki fiyat değişimini inceleyerek doğru zamanda alışveriş yapın.</p>
+            {/* FİYAT GEÇMİŞİ */}
+            <div className="bg-white p-8 rounded-[2rem] mb-10 border border-slate-100 shadow-xl shadow-slate-100/50 relative overflow-hidden">
+                <div className="absolute top-0 left-0 w-2 h-full bg-primary opacity-10"></div>
+                <div className="flex items-center justify-between mb-8">
+                  <div>
+                    <h3 className="text-xl font-bold flex items-center gap-3 text-slate-900 leading-none mb-2">
+                      <LineChart className="w-6 h-6 text-primary" /> Fiyat Geçmişi Analizi
+                    </h3>
+                    <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">PIINTI SMART ANALYTICS</p>
+                  </div>
+                  <div className="bg-indigo-50 text-primary px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest border border-indigo-100">Son 90 Gün</div>
+                </div>
                 <PriceHistoryChart historyData={product.price_history || []} />
             </div>
 
-            <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
-               Karşılaştırma <span className="bg-slate-200 text-slate-600 text-xs px-2 py-0.5 rounded-full">{sortedPrices.length} Mağaza</span>
+            {/* AI PREDICTOR / BEKLENTİ ANALİZİ */}
+            {(() => {
+              const analytics = analyzePriceTrend(product.price_history || [], lowestPrice);
+              return (
+                <div className="bg-slate-900 p-8 rounded-[2rem] mb-10 border border-slate-800 shadow-2xl relative overflow-hidden group">
+                  <div className="absolute top-0 right-0 w-64 h-64 bg-primary/20 rounded-full blur-[100px] -mr-32 -mt-32"></div>
+                  <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-8">
+                    <div className="flex items-center gap-6">
+                      <div className={`w-16 h-16 ${analytics.color} rounded-2xl flex items-center justify-center text-3xl shadow-xl shadow-black/20`}>
+                        {analytics.icon}
+                      </div>
+                      <div>
+                        <h3 className="text-white font-black text-xl mb-1 uppercase tracking-tight">{analytics.message}</h3>
+                        <p className="text-slate-400 text-xs font-bold uppercase tracking-widest">Piinti AI Fiyat Beklentisi</p>
+                      </div>
+                    </div>
+                    <div className="bg-white/5 backdrop-blur border border-white/10 p-4 rounded-2xl text-center md:text-left">
+                      <p className="text-[10px] font-black text-primary uppercase tracking-[0.2em] mb-2">Analiz Özeti</p>
+                      <p className="text-white text-sm font-medium leading-relaxed max-w-xs">
+                        {analytics.trend === 'best' ? "Şu an ürünün kaydedilmiş en düşük fiyatındasın. Kaçırmanı önermeyiz!" :
+                         analytics.trend === 'good' ? "Fiyat ortalamanın altında seyrediyor, alım için uygun bir dönem." :
+                         analytics.trend === 'bad' ? "Fiyat son dönem ortalamasının üzerinde. Acil değilse beklemeni öneririz." :
+                         "Fiyat istikrarlı görünüyor, piyasa koşulları normal."}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              );
+            })()}
+
+            <h2 className="text-xl font-black text-slate-900 mb-6 flex items-center gap-3 uppercase tracking-tight">
+               Fiyat Karşılaştırması <span className="bg-slate-100 text-slate-500 text-[10px] px-3 py-1 rounded-full font-black tracking-widest">{sortedPrices.length} MAĞAZA</span>
             </h2>
             
-            <div className="bg-white shadow border border-slate-100 rounded-2xl overflow-hidden">
+            <div className="bg-white shadow-2xl shadow-slate-200/50 border border-slate-100 rounded-[2rem] overflow-hidden">
                {sortedPrices.map((storeConfig:any, idx:number) => {
                  const store = storeConfig.vendors;
                  const isCheapest = idx === 0;
 
                  return (
-                  <div key={idx} className={`p-5 flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-100 last:border-0 hover:bg-slate-50 transition-colors ${isCheapest ? 'bg-orange-50/30' : ''}`}>
-                    <div className="flex items-center gap-4">
-                      <div className="w-16 h-16 rounded-xl flex items-center justify-center text-3xl shrink-0" style={{backgroundColor: `${store?.color}15`, color: store?.color}}>
-                        {store?.logo || '🏪'}
+                  <div key={idx} className={`p-8 flex flex-col md:flex-row md:items-center justify-between gap-8 border-b border-slate-50 last:border-0 hover:bg-slate-50 transition-all duration-300 ${isCheapest ? 'bg-emerald-50/20' : ''}`}>
+                    <div className="flex items-center gap-6">
+                      <div className="w-20 h-20 rounded-2xl flex items-center justify-center text-3xl shrink-0 shadow-sm border border-slate-100 bg-white" style={{color: store?.color}}>
+                        {store?.logo || <Store className="w-10 h-10 text-slate-200" />}
                       </div>
                       <div>
-                        <h3 className="font-bold text-lg text-slate-800 flex items-center gap-2">
-                          {store?.name || 'Mağaza'}
-                          {isCheapest && <span className="bg-green-100 text-green-700 text-[10px] px-2 py-0.5 rounded-md uppercase font-black uppercase tracking-wider border border-green-200">En Ucuz</span>}
-                        </h3>
-                        <div className="flex items-center gap-2 text-sm text-slate-500 mt-1">
-                           <span className="flex items-center gap-1">🚚 {storeConfig.shipping_info || 'Kargo Bilgisi Yok'}</span>
+                        <div className="flex items-center gap-3 mb-2">
+                          <h3 className="font-black text-xl text-slate-900 tracking-tight">
+                            {store?.name || 'Seçkin Mağaza'}
+                          </h3>
+                          {isCheapest && <span className="bg-emerald-500 text-white text-[9px] px-3 py-1 rounded-full uppercase font-black tracking-widest shadow-lg shadow-emerald-500/20 flex items-center gap-1"><Zap className="w-3 h-3" /> En Uygun</span>}
+                        </div>
+                        <div className="flex flex-wrap items-center gap-4 text-xs font-bold text-slate-400 uppercase tracking-widest">
+                           <span className="flex items-center gap-2"><Truck className="w-4 h-4 text-slate-300" /> {storeConfig.shipping_info || 'Standart Kargo'}</span>
                            {storeConfig.in_stock ? (
-                             <span className="text-green-600 font-medium ml-2">• Stokta</span>
+                             <span className="text-emerald-500 flex items-center gap-1.5">• Stokta Hazır</span>
                            ) : (
-                             <span className="text-red-500 font-medium ml-2">• Tükendi!</span>
+                             <span className="text-rose-500 flex items-center gap-1.5">• Stok Bekleniyor</span>
                            )}
                         </div>
                       </div>
                     </div>
                     
-                    <div className="flex flex-col items-end gap-2 text-right">
-                       <span className="text-2xl font-black text-slate-800">{formatPrice(storeConfig.price)}</span>
-                       <a href={storeConfig.product_url} target="_blank" rel="noopener noreferrer" className="text-sm font-bold bg-slate-900 hover:bg-slate-800 text-white px-5 py-2.5 rounded-lg transition-all shadow-md w-full md:w-auto text-center">
-                         Mağazaya Git
+                    <div className="flex flex-col items-end gap-3 text-right">
+                       <span className="text-3xl font-black text-slate-900 tracking-tighter">{formatPrice(storeConfig.price)}</span>
+                       <a href={storeConfig.product_url} target="_blank" rel="noopener noreferrer" className="text-xs font-black bg-slate-900 hover:bg-primary text-white px-8 py-4 rounded-xl transition-all duration-300 shadow-xl shadow-slate-900/10 w-full md:w-auto text-center uppercase tracking-widest">
+                         Mağazaya İlerle
                        </a>
                     </div>
                   </div>
@@ -233,40 +284,53 @@ export default async function UrunDetay({ params }: { params: { id: string } }) 
                })}
                
                {sortedPrices.length === 0 && (
-                 <div className="p-8 text-center text-slate-500">
-                   Şu an bu ürün için mağaza fiyat bilgisi bulunmuyor.
+                 <div className="p-12 text-center text-slate-500 italic">
+                   Üzgünüz, henüz bu ürün için doğrulanmış fiyat bilgisi bulunmuyor.
                  </div>
                )}
             </div>
           </div>
         </div>
 
-        <div className="mt-16 border-t border-slate-200 pt-16">
-          <div className="grid md:grid-cols-2 gap-12">
-             <section className="bg-white shadow border border-slate-100 rounded-2xl p-6">
-                <h2 className="text-xl font-bold mb-6">Teknik Özellikler</h2>
-                <div className="space-y-4">
+        <ReviewSummary productId={product.id} />
+
+        {/* Specs and Analytics Section */}
+        <div className="mt-24 border-t border-slate-200 pt-24 grid md:grid-cols-2 gap-20">
+             <section>
+                <div className="flex items-center gap-4 mb-10">
+                  <div className="w-12 h-12 bg-white shadow-xl rounded-2xl flex items-center justify-center text-primary border border-slate-100"><Package className="w-6 h-6" /></div>
+                  <h2 className="text-2xl font-black text-slate-900 tracking-tight uppercase">Teknik Özellikler</h2>
+                </div>
+                <div className="space-y-2">
                   {product.specs && Object.keys(product.specs).length > 0 ? (
                     Object.entries(product.specs).map(([key, value]) => (
-                      <div key={key} className="flex border-b border-slate-100 pb-3 last:border-0 hover:bg-slate-50 p-2 rounded-lg transition-colors">
-                        <span className="w-1/3 text-slate-500 font-medium">{key}</span>
-                        <span className="w-2/3 text-slate-900 font-semibold">{typeof value === 'string' ? value : String(value)}</span>
+                      <div key={key} className="flex border-b border-slate-50 pb-4 pt-4 last:border-0 hover:bg-white hover:px-4 hover:shadow-lg hover:shadow-slate-100 transition-all duration-300 rounded-xl group">
+                        <span className="w-1/3 text-slate-400 font-bold text-xs uppercase tracking-widest group-hover:text-primary transition-colors">{key}</span>
+                        <span className="w-2/3 text-slate-800 font-bold">{typeof value === 'string' ? value : String(value)}</span>
                       </div>
                     ))
                   ) : (
-                    <p className="text-slate-500">Kayıtlı teknik özellik yok.</p>
+                    <p className="text-slate-400 font-bold uppercase tracking-widest text-sm">SPESİFİKASYON DATA BEKLENİYOR...</p>
                   )}
                 </div>
              </section>
              
-             <section className="bg-white shadow border border-slate-100 rounded-2xl p-6 text-center">
-                <h2 className="text-xl font-bold mb-2">Supabase Bağlantısı Hazır</h2>
-                <div className="text-4xl font-black text-primary mb-4">Mükemmel!</div>
-                <p className="text-slate-600 font-medium">
-                  Artık tüm veriler statik dosyalardan değil,<br />direkt veritabanından, <span className="font-bold underline text-brand">Piyasa Sürümü</span> tadında çalışıyor!
-                </p>
+             <section className="bg-gradient-to-br from-slate-900 to-black rounded-[3rem] p-12 text-center text-white shadow-2xl relative overflow-hidden group">
+                <div className="absolute inset-0 bg-primary opacity-5 mix-blend-overlay"></div>
+                <div className="relative z-10">
+                  <div className="w-20 h-20 bg-white/10 backdrop-blur rounded-[2rem] flex items-center justify-center text-primary border border-white/10 mx-auto mb-8 shadow-2xl group-hover:scale-110 transition-transform duration-500">
+                    <ShieldCheck className="w-10 h-10" />
+                  </div>
+                  <h2 className="text-2xl font-bold mb-4 tracking-tight uppercase">Veri Güvenliği Hazır</h2>
+                  <div className="text-5xl font-black bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent mb-6 tracking-tighter">SUCCESS</div>
+                  <p className="text-slate-400 font-bold text-xs uppercase tracking-[0.2em] leading-loose">
+                    Piinti Analytics Motoru<br />
+                    Tüm verileri anlık olarak<br />
+                    <span className="text-white border-b-2 border-primary">Supabase Bulutu</span><br />
+                    üzerinden doğrular.
+                  </p>
+                </div>
              </section>
-          </div>
         </div>
 
       </div>

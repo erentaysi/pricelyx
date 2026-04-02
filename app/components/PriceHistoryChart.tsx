@@ -1,5 +1,6 @@
 'use client';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { LineChart as LineChartIcon } from 'lucide-react';
 import { useMemo } from 'react';
 
 interface HistoryItem {
@@ -35,10 +36,10 @@ export default function PriceHistoryChart({ historyData }: Props) {
 
   if (chartData.length < 2) {
     return (
-      <div className="w-full h-48 bg-slate-50 border border-dashed border-slate-200 rounded-xl flex flex-col items-center justify-center text-slate-400">
-        <span className="text-2xl mb-2">📉</span>
-        <p className="text-sm font-medium px-4 text-center">
-          Grafik oluşturabilmek için en az 2 farklı fiyat geçmişine ihtiyaç var.<br/>Fiyat değiştikçe burası canlanacak!
+      <div className="w-full h-48 bg-slate-50 border border-dashed border-slate-200 rounded-2xl flex flex-col items-center justify-center text-slate-400 p-8">
+        <LineChartIcon className="w-10 h-10 mb-4 opacity-20" />
+        <p className="text-sm font-bold px-4 text-center max-w-xs leading-relaxed uppercase tracking-widest opacity-40">
+          Analytics verisi toplanıyor. Fiyat değiştikçe bu grafik canlanacak.
         </p>
       </div>
     );

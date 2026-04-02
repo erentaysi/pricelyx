@@ -165,6 +165,22 @@ export async function GET() {
         });
 
         await supabase.from('product_prices').insert(prices);
+
+        // 5. Add Mock Reviews for the Summarizer
+        const mockReviews = [
+          { user_name: "Ayşe Y.", rating: 5, comment: "Kankalar bu ürün gerçekten efsane. Fiyatına göre performansı çok iyi!" },
+          { user_name: "Mehmet K.", rating: 4, comment: "Bataryası beklediğimden uzun gidiyor ama kamerası gece biraz kumlanma yapıyor." },
+          { user_name: "Selin T.", rating: 5, comment: "Tasarımı çok şık, elime aldığımda premium hissi veriyor. Piinti sayesinde en uygun fiyata aldım!" },
+          { user_name: "Can B.", rating: 3, comment: "Kutu içeriği biraz zayıf, şarj adaptörü çıkmıyor. Ama ürünün kendisi kaliteli." },
+          { user_name: "Esra D.", rating: 5, comment: "Hızlı gönderi için teşekkürler. Ürün tam anlatıldığı gibi, beklentimi karşıladı." }
+        ];
+
+        const reviewsToInsert = mockReviews.map(r => ({
+          product_id: productId,
+          ...r
+        }));
+
+        await supabase.from('product_reviews').insert(reviewsToInsert);
       }
     }
 
