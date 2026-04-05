@@ -7,6 +7,6 @@ export default function robots(): MetadataRoute.Robots {
       allow: '/',
       disallow: ['/api/', '/admin/'],
     },
-    sitemap: 'https://pricelyx-ten.vercel.app/sitemap.xml',
+    sitemap: 'https://www.piinti.com/sitemap.xml',
   };
 }

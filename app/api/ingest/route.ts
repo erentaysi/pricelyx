@@ -7,10 +7,10 @@ export async function POST(request: Request) {
   try {
     // Güvenlik Koruması
     const authHeader = request.headers.get('authorization');
-    const secretKey = process.env.INGEST_SECRET_KEY || 'piinti-gizli-anahtar-123'; // n8n'den gönderilecek şifre
+    const secretKey = process.env.INGEST_SECRET_KEY;
     
-    if (authHeader !== `Bearer ${secretKey}`) {
-      return NextResponse.json({ error: 'Yetkisiz erişim. Güvenlik Anahtarı Yanlış!' }, { status: 401 });
+    if (!secretKey || authHeader !== `Bearer ${secretKey}`) {
+      return NextResponse.json({ error: 'Yetkisiz erişim.' }, { status: 401 });
     }
 
     const rawData = await request.json();
@@ -157,6 +157,6 @@ export async function POST(request: Request) {
 
   } catch (error: any) {
     console.error('Ingest API Error:', error);
-    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+    return NextResponse.json({ success: false, error: 'Sunucu hatası oluştu.' }, { status: 500 });
   }
 }

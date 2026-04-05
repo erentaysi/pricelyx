@@ -18,6 +18,7 @@ import {
   ArrowRight
 } from 'lucide-react';
 import { analyzePriceTrend } from '@/lib/analytics';
+import Image from 'next/image';
 
 import { Metadata } from 'next';
 
@@ -26,7 +27,7 @@ export const dynamic = 'force-dynamic';
 export async function generateMetadata({ params }: { params: { id: string } }): Promise<Metadata> {
   const { data: product } = await supabase
     .from('products')
-    .select('title, categories(name), image_url')
+    .select('title, categories(name), brands(name), image_url, product_prices(price)')
     .eq('id', params.id)
     .single();
 
@@ -36,9 +37,15 @@ export async function generateMetadata({ params }: { params: { id: string } }): 
 
   const categoryObj: any = Array.isArray(product.categories) ? product.categories[0] : product.categories;
   const categoryName = categoryObj?.name || 'Kategori';
+  const brandObj: any = Array.isArray(product.brands) ? product.brands[0] : product.brands;
+  const brandName = brandObj?.name || '';
 
-  const title = `${product.title} - En Ucuz Fiyat Seçenekleri`;
-  const description = `${product.title} modelini en uygun fiyata bulun. ${categoryName} kategorisindeki en güncel fiyatları Piinti kalitesiyle karşılaştırın.`;
+  const prices = product.product_prices || [];
+  const minPrice = prices.length > 0 ? Math.min(...prices.map((p: any) => p.price)) : 0;
+  const priceText = minPrice > 0 ? `${new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY', minimumFractionDigits: 0 }).format(minPrice)}'den başlayan fiyatlarla. ` : '';
+
+  const title = `${product.title} ${brandName} En Ucuz Fiyatı ve Özellikleri - Piinti`;
+  const description = `${product.title} ${brandName} modelini ${priceText}${categoryName} kategorisindeki en güncel fiyatları, fiyat geçmişini ve mağaza karşılaştırmalarını Piinti'de görün.`;
 
   return {
     title,
@@ -46,7 +53,7 @@ export async function generateMetadata({ params }: { params: { id: string } }): 
     openGraph: {
       title,
       description,
-      images: [{ url: 'https://pricelyx-ten.vercel.app/og-image.jpg', width: 1200, height: 630 }]
+      images: [product.image_url || 'https://www.piinti.com/og-image.jpg']
     },
   };
 }
@@ -128,7 +135,16 @@ export default async function UrunDetay({ params }: { params: { id: string } }) 
                  {(!product.image_url || product.image_url === '📦') ? (
                     <Package className="w-32 h-32 text-slate-200" />
                  ) : (product.image_url?.startsWith('http') || product.image_url?.startsWith('data:image')) ? (
-                    <img src={product.image_url} alt={product.title} className="max-w-full max-h-full object-contain group-hover:scale-105 transition-transform duration-700" />
+                    <div className="relative w-full h-full">
+                      <Image 
+                        src={product.image_url.replace('http://', 'https://')} 
+                        alt={`${product.title} - Piinti Fiyat Karşılaştırması`}
+                        fill
+                        priority
+                        sizes="(max-width: 640px) 100vw, 400px"
+                        className="object-contain group-hover:scale-105 transition-transform duration-700" 
+                      />
+                    </div>
                   ) : (
                     <span className="text-9xl group-hover:scale-110 transition-transform duration-700 select-none">
                       {product.image_url}
@@ -148,7 +164,15 @@ export default async function UrunDetay({ params }: { params: { id: string } }) 
                    {(!product.image_url || product.image_url === '📦') ? (
                       <Package className="w-8 h-8 text-slate-200" />
                    ) : (product.image_url?.startsWith('http') || product.image_url?.startsWith('data:image')) ? (
-                      <img src={product.image_url} alt={product.title} className="w-full h-full object-contain" />
+                      <div className="relative w-full h-full">
+                        <Image 
+                          src={product.image_url.replace('http://', 'https://')} 
+                          alt={`${product.title} Thumbnail - Piinti`}
+                          fill
+                          sizes="100px"
+                          className="object-contain" 
+                        />
+                      </div>
                     ) : (
                       <span className="text-xl">{product.image_url}</span>
                     )}

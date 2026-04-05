@@ -3,8 +3,15 @@ import { supabase } from '@/lib/supabase';
 
 export const dynamic = 'force-dynamic';
 
-export async function GET() {
+export async function POST(request: Request) {
   try {
+    // Güvenlik Koruması (Sadece Yetkili Erişim)
+    const authHeader = request.headers.get('authorization');
+    const secretKey = process.env.INGEST_SECRET_KEY;
+    
+    if (!secretKey || authHeader !== `Bearer ${secretKey}`) {
+      return NextResponse.json({ error: 'Yetkisiz erişim.' }, { status: 401 });
+    }
     // 1. Kategorileri Garantiye Al
     const catData = [
       { name: 'Akıllı Telefon', slug: 'akilli-telefon' },

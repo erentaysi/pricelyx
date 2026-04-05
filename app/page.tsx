@@ -15,6 +15,7 @@ import {
   Database,
   Package
 } from 'lucide-react';
+import Image from 'next/image';
 import { analyzePriceTrend } from '@/lib/analytics';
 
 export const dynamic = 'force-dynamic';
@@ -59,11 +60,13 @@ export default async function Home() {
       <section className="gradient-bg text-white py-20 md:py-32">
         <div className="container mx-auto px-4">
             <div className="max-w-4xl mx-auto text-center fade-in">
-                <h1 className="text-4xl md:text-6xl font-bold mb-6">En İyi Fiyat, En Akıllı Seçim</h1>
-                <p className="text-xl md:text-2xl mb-8 text-white/90">
+                <h1 className="text-4xl md:text-6xl font-bold mb-6 text-shadow-sm">
+                  Türkiye'nin En Gelişmiş Ürün ve Fiyat Karşılaştırma Platformu
+                </h1>
+                <p className="text-xl md:text-2xl mb-8 text-white/90 font-medium">
                     Milyonlarca ürün arasından en uygun fiyatı bul, karşılaştır, tasarruf et
                 </p>
-                <div className="max-w-2xl mx-auto">
+                <div className="max-w-2xl mx-auto items-center justify-center flex">
                     <SearchForm />
                 </div>
                 <div className="grid grid-cols-3 gap-4 mt-12 max-w-2xl mx-auto">
@@ -121,17 +124,26 @@ export default async function Home() {
                         const analytics = analyzePriceTrend(product.price_history || [], minPrice);
                         
                         return (
-                            <Link href={`/urun/${product.id}`} key={product.id} className="group bg-white rounded-2xl shadow-sm border border-slate-100 hover:shadow-2xl transition-all duration-500 overflow-hidden flex flex-col">
+                            <Link href={`/urun/${product.id}`} key={product.id} className="group bg-white rounded-2xl border border-slate-100 product-card-hover overflow-hidden flex flex-col">
                                 <div className="relative h-56 bg-slate-50 flex items-center justify-center overflow-hidden p-6">
                                   {/* Dynamic Analytics Badge */}
-                                  <div className={`absolute top-4 right-4 ${analytics.color} text-white text-[10px] font-black px-3 py-1 rounded-full shadow-lg z-10 uppercase tracking-widest flex items-center gap-1 scale-90 origin-right group-hover:scale-100 transition-transform`}>
+                                  <div className={`absolute top-4 right-4 ${analytics.trend === 'bad' ? 'bg-rose-500' : analytics.color} text-white text-[10px] font-black px-3 py-1 rounded-full shadow-lg z-10 uppercase tracking-widest flex items-center gap-1 scale-90 origin-right group-hover:scale-100 transition-transform`}>
                                     <span>{analytics.icon}</span> {analytics.message}
                                   </div>
 
                                   {(!product.image_url || product.image_url === '📦') ? (
                                     <Package className="w-20 h-20 text-slate-200" />
                                   ) : (product.image_url?.startsWith('http') || product.image_url?.includes('data:image')) ? (
-                                    <img src={product.image_url} alt={product.title} className="max-w-full max-h-full object-contain group-hover:scale-110 transition-transform duration-500" />
+                                    <div className="relative w-full h-full">
+                                      <Image 
+                                        src={product.image_url.replace('http://', 'https://')} 
+                                        alt={`${product.title} - En Uygun Fiyat Karşılaştırması`}
+                                        fill
+                                        sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
+                                        className="object-contain group-hover:scale-105 transition-transform duration-500" 
+                                        loading="lazy"
+                                      />
+                                    </div>
                                   ) : (
                                     <span className="text-4xl">{product.image_url}</span>
                                   )}
@@ -151,7 +163,7 @@ export default async function Home() {
                                     </div>
                                     <div className="mt-auto">
                                       <div className="flex items-baseline gap-2 mb-3">
-                                          <span className="text-2xl font-black text-gray-900">{minPrice > 0 ? formatPrice(minPrice) : 'Fiyat Yok'}</span>
+                                          <span className={`text-2xl font-black ${analytics.trend === 'best' || analytics.trend === 'good' ? 'text-emerald-600' : analytics.trend === 'bad' ? 'text-rose-600' : 'text-gray-900'}`}>{minPrice > 0 ? formatPrice(minPrice) : 'Fiyat Yok'}</span>
                                       </div>
                                       <div className="text-[11px] font-bold text-gray-400 flex items-center gap-2 pt-3 border-t border-slate-100">
                                         <Database className="w-3 h-3" /> {prices.length} farklı satıcıda karşılaştırıldı

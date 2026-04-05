@@ -71,7 +71,32 @@ CREATE TABLE product_reviews (
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- Test Verisi Ekleme (Sistem calismaya basladiginda sadece Amazon'u dahil edecegiz simdilik)
+-- TEST VERİSİ
 INSERT INTO vendors (name, logo, color) VALUES ('Amazon TR', '📦', '#FF9900');
 INSERT INTO categories (name, slug, icon) VALUES ('Akıllı Telefon', 'akilli-telefon', '📱');
 INSERT INTO categories (name, slug, icon) VALUES ('Bilgisayar', 'bilgisayar', '💻');
+
+-- =========================================================================
+-- KRİTİK GÜVENLİK AYARLARI (ROW LEVEL SECURITY - RLS)
+-- =========================================================================
+
+-- 1. RLS'yi her tablo icin aktif et (Bu komut olmadan herkes her seyi yapabilir!)
+ALTER TABLE categories ENABLE ROW LEVEL SECURITY;
+ALTER TABLE brands ENABLE ROW LEVEL SECURITY;
+ALTER TABLE products ENABLE ROW LEVEL SECURITY;
+ALTER TABLE vendors ENABLE ROW LEVEL SECURITY;
+ALTER TABLE product_prices ENABLE ROW LEVEL SECURITY;
+ALTER TABLE price_history ENABLE ROW LEVEL SECURITY;
+ALTER TABLE product_reviews ENABLE ROW LEVEL SECURITY;
+
+-- 2. Herkesin verileri GORMESİNE (SELECT) izin ver (Musteriler icin gerekli)
+CREATE POLICY "Public Select" ON categories FOR SELECT USING (true);
+CREATE POLICY "Public Select" ON brands FOR SELECT USING (true);
+CREATE POLICY "Public Select" ON products FOR SELECT USING (true);
+CREATE POLICY "Public Select" ON vendors FOR SELECT USING (true);
+CREATE POLICY "Public Select" ON product_prices FOR SELECT USING (true);
+CREATE POLICY "Public Select" ON price_history FOR SELECT USING (true);
+CREATE POLICY "Public Select" ON product_reviews FOR SELECT USING (true);
+
+-- 3. YAZMA/SİLME yetkilerini varsayilan olarak HERKESE KAPALT (Whitelist mantigi)
+-- Admin paneli veya n8n ingest icin 'service_role' key kullanılmalı, 'anon' key ise sadece SELECT yapabilir.

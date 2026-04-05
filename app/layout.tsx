@@ -16,18 +16,21 @@ import {
   Linkedin,
   Facebook
 } from 'lucide-react';
+import Navbar from './components/Navbar';
+import GoogleAnalytics from './components/GoogleAnalytics';
+import { Suspense } from 'react';
 
 export const metadata: Metadata = {
-  metadataBase: new URL('https://pricelyx-ten.vercel.app'),
+  metadataBase: new URL('https://www.piinti.com'),
   title: {
-    default: "Piinti | Akıllı Alışverişin Ayrıcalıklı Adresi",
+    default: "Piinti | Türkiye'nin En Şeffaf Fiyat Karşılaştırma Platformu",
     template: "%s | Piinti"
   },
-  description: "Türkiye'nin en seçkin pazar yerlerini saniyeler içinde analiz edin. Piinti ile milyonlarca ürün arasından kaliteden ödün vermeden en doğru fiyatı keşfedin.",
+  description: "Milyonlarca ürünü, yüzlerce mağazayı anlık analiz edin. Piinti ile en ucuz fiyatı, fiyat geçmişini ve kullanıcı yorumlarını tek adreste bulun.",
   openGraph: {
-    title: "Piinti | Akıllı Alışverişin Ayrıcalıklı Adresi",
-    description: "Sınıfının en iyisi fiyat karşılaştırma platformuyla premium alışveriş deneyimini yaşayın.",
-    url: "https://pricelyx-ten.vercel.app",
+    title: "Piinti | Akıllı Alışveriş ve Fiyat Karşılaştırma",
+    description: "Sınıfının en iyisi yapay zeka destekli fiyat analizi ile tasarruf etmeye bugün başlayın.",
+    url: "https://www.piinti.com",
     siteName: "Piinti",
     locale: "tr_TR",
     type: "website",
@@ -36,6 +39,12 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "Piinti | Akıllı Alışverişin Ayrıcalıklı Adresi",
     description: "Kaliteden ödün vermeden en iyi fiyata ulaşın.",
+  },
+  alternates: {
+    canonical: 'https://www.piinti.com',
+  },
+  verification: {
+    google: "5TdZaOAWcRe2uFNBAaQeuJRV9jrGhnu_gPKcj6NtJoc",
   }
 };
 
@@ -47,6 +56,9 @@ export default function RootLayout({
   return (
     <html lang="tr">
       <body className="bg-gray-50 font-sans antialiased text-slate-900">
+        <Suspense fallback={null}>
+          <GoogleAnalytics gaId={process.env.NEXT_PUBLIC_GA_ID || ""} />
+        </Suspense>
         <Navbar />
         <main className="min-h-screen">
           {children}
@@ -58,39 +70,6 @@ export default function RootLayout({
   );
 }
 
-function Navbar() {
-  return (
-    <nav className="bg-white/80 backdrop-blur-md border-b border-slate-100 sticky top-0 z-50">
-        <div className="container mx-auto px-4 py-4">
-            <div className="flex items-center justify-between">
-                {/* Logo */}
-                <Link href="/" className="flex items-center group">
-                    <svg width="160" height="40" viewBox="0 0 200 50" xmlns="http://www.w3.org/2000/svg" className="group-hover:scale-105 transition-transform duration-300">
-                        <defs>
-                            <linearGradient id="logoGradient" x1="0%" y1="0%" x2="100%" y2="0%">
-                                <stop offset="0%" style={{stopColor: "#2E86AB", stopOpacity: 1}} />
-                                <stop offset="100%" style={{stopColor: "#A23B72", stopOpacity: 1}} />
-                            </linearGradient>
-                        </defs>
-                        <path d="M 10 35 L 10 15 C 10 10 15 5 20 5 L 30 5 C 35 5 40 10 40 15 C 40 20 35 25 30 25 L 20 25 M 10 25 L 35 45" 
-                              stroke="url(#logoGradient)" strokeWidth="3" fill="none" strokeLinecap="round" strokeLinejoin="round"/>
-                        <text x="45" y="32" fontFamily="'Inter', sans-serif" fontSize="26" fontWeight="900" fill="url(#logoGradient)">Piinti</text>
-                        <text x="48" y="42" fontFamily="'Inter', sans-serif" fontSize="8" fontWeight="600" fill="#94a3b8" letterSpacing="1">PREMIUM ANALYTICS</text>
-                    </svg>
-                </Link>
-                
-                {/* Desktop Navigation */}
-                <div className="hidden md:flex items-center space-x-8">
-                    <Link href="/" className="text-sm font-bold text-slate-500 hover:text-primary transition-colors">Ana Sayfa</Link>
-                    <Link href="/urunler" className="text-sm font-bold text-slate-500 hover:text-primary transition-colors">Tüm Ürünler</Link>
-                    <Link href="/kampanyalar" className="text-sm font-bold text-slate-500 hover:text-primary transition-colors">Kampanyalar</Link>
-                    <Link href="/hakkimizda" className="text-sm font-bold text-slate-500 hover:text-primary transition-colors">Hakkımızda</Link>
-                </div>
-            </div>
-        </div>
-    </nav>
-  );
-}
 
 function Footer() {
   return (

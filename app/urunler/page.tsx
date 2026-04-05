@@ -3,23 +3,24 @@ import { supabase } from "@/lib/supabase";
 import FilterSidebar from "./FilterSidebar";
 import { Metadata } from 'next';
 import { analyzePriceTrend } from "@/lib/analytics";
+import Image from "next/image";
 
 export const dynamic = 'force-dynamic';
 
 export async function generateMetadata({ searchParams }: { searchParams: { q?: string, cat?: string, brand?: string } }): Promise<Metadata> {
   const { q, cat, brand } = searchParams;
   let title = "Tüm Ürünler";
-  let description = "En güncel ürünleri ve fiyatları karşılaştırın.";
+  let description = "Milyonlarca ürünü ve en güncel fiyatları Piinti ile saniyeler içinde karşılaştırın.";
 
   if (q) {
-    title = `"${q}" İçin Sonuçlar`;
-    description = `${q} fiyatlarını ve özelliklerini tüm mağazalar arasından karşılaştırın.`;
+    title = `"${q}" İçin En Ucuz Fiyatlar ve Modeller`;
+    description = `"${q}" aramanız için en uygun fiyatlı seçenekleri, mağaza karşılaştırmalarını ve kullanıcı yorumlarını burada bulun.`;
   } else if (cat) {
-    title = `${cat} Kategorisindeki Ürünler`;
-    description = `En iyi ${cat} modellerini ve fiyatlarını keşfedin.`;
+    title = `${cat} Modelleri ve En Uygun Fiyatlar`;
+    description = `En iyi ${cat} ürünlerini, indirimleri ve tüm mağaza fiyatlarını Piinti kalitesiyle karşılaştırın.`;
   } else if (brand) {
-    title = `${brand} Ürünleri`;
-    description = `${brand} marka ürünlerin fiyatlarını karşılaştırın.`;
+    title = `${brand} Ürünleri, Fiyatları ve Kampanyaları`;
+    description = `${brand} marka tüm ürünlerin en güncel piyasa fiyatlarını ve indirimlerini keşfedin.`;
   }
 
   return {
@@ -86,15 +87,24 @@ export default async function UrunlerPage({ searchParams }: { searchParams: { q?
 
              return (
               <Link href={`/urun/${product.id}`} key={product.id}>
-                <div className="bg-white border text-center border-slate-100 rounded-2xl p-5 hover:shadow-xl hover:border-brand/30 transition-all cursor-pointer group flex flex-col h-full overflow-hidden">
+                <div className="bg-white border text-center border-slate-100 rounded-2xl p-5 product-card-hover cursor-pointer group flex flex-col h-full overflow-hidden">
                   <div className="bg-slate-50 rounded-xl h-48 mb-4 flex items-center justify-center p-4 overflow-hidden relative">
                     {/* Analytics Badge */}
-                    <div className={`absolute top-2 right-2 ${analytics.color} text-white text-[9px] font-black px-2 py-1 rounded-full z-10 uppercase tracking-tighter`}>
+                    <div className={`absolute top-2 right-2 ${analytics.trend === 'bad' ? 'bg-rose-500' : analytics.color} text-white text-[9px] font-black px-2 py-1 rounded-full z-10 uppercase tracking-tighter`}>
                       {analytics.icon} {analytics.message}
                     </div>
 
                     {(product.image_url?.startsWith('http') || product.image_url?.startsWith('data:image')) ? (
-                      <img src={product.image_url} alt={product.title} className="max-w-full max-h-full object-contain group-hover:scale-110 transition-transform duration-300" />
+                      <div className="relative w-full h-full">
+                        <Image 
+                          src={product.image_url.replace('http://', 'https://')} 
+                          alt={`${product.title} - En İyi Fiyatlarla Piinti'de`}
+                          fill
+                          sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                          className="object-contain group-hover:scale-105 transition-transform duration-300" 
+                          loading="lazy"
+                        />
+                      </div>
                     ) : (
                       <span className="text-6xl group-hover:scale-110 transition-transform duration-300 break-all text-center">
                         {product.image_url}
@@ -111,7 +121,7 @@ export default async function UrunlerPage({ searchParams }: { searchParams: { q?
                     </div>
                   </div>
                   <div className="text-left mt-auto">
-                    <div className="text-2xl font-black text-slate-900">{minPrice > 0 ? formatPrice(minPrice) : 'Fiyat Yok'}</div>
+                    <div className={`text-2xl font-black ${analytics.trend === 'best' || analytics.trend === 'good' ? 'text-emerald-600' : analytics.trend === 'bad' ? 'text-rose-600' : 'text-slate-900'}`}>{minPrice > 0 ? formatPrice(minPrice) : 'Fiyat Yok'}</div>
                     <div className="mt-2 text-xs font-semibold text-slate-500 flex items-center gap-1">
                        🏪 {prices.length} mağazada
                     </div>
