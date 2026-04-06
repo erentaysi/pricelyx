@@ -38,19 +38,10 @@ export async function POST(request: Request) {
       return 'elektronik'; // Varsayılan Kategori
     };
 
-    // 2. Satıcıyı Garantiye Al (Amazon TR üzerinden geliyorsa)
-    let amazonVendorId = null;
-    const { data: vendorData } = await supabase.from('vendors').select('id').ilike('name', 'Amazon TR').single();
-    if (!vendorData) {
-      const { data: newVendor } = await supabase.from('vendors').insert({ name: 'Amazon TR', url: 'https://www.amazon.com.tr' }).select().single();
-      amazonVendorId = newVendor?.id;
-    } else {
-      amazonVendorId = vendorData.id;
-    }
-
-    // 3. Mevcut Marka ve Kategorileri Ön belleğe Al (Hız İçin)
+    // 2. Mevcut Marka, Kategori ve Satıcıları Ön belleğe Al (Hız İçin)
     const { data: categories } = await supabase.from('categories').select('id, slug');
     const { data: brands } = await supabase.from('brands').select('id, name');
+    const { data: vendors } = await supabase.from('vendors').select('id, name');
     
     let processedCount = 0;
 
@@ -105,13 +96,33 @@ export async function POST(request: Request) {
         if (newProd) finalProductId = newProd.id;
       }
 
+      // 3. Satıcıyı Belirle (URL üzerinden otomatik tahmin)
+      let vendorName = item.vendor || 'Bilinmiyor';
+      if (vendorName === 'Bilinmiyor') {
+        if (url.includes('amazon.com.tr')) vendorName = 'Amazon TR';
+        else if (url.includes('trendyol.com')) vendorName = 'Trendyol';
+        else if (url.includes('hepsiburada.com')) vendorName = 'Hepsiburada';
+        else if (url.includes('n11.com')) vendorName = 'n11';
+        else if (url.includes('ciceksepeti.com')) vendorName = 'Çiçeksepeti';
+      }
+
+      let vendorObj = vendors?.find(v => v.name.toLowerCase() === vendorName.toLowerCase());
+      if (!vendorObj && vendorName !== 'Bilinmiyor') {
+        const { data: newVendor } = await supabase.from('vendors').insert({ name: vendorName }).select().single();
+        if (newVendor) {
+          vendors?.push(newVendor);
+          vendorObj = newVendor;
+        }
+      }
+
+      const activeVendorId = vendorObj?.id;
+
       // Fiyatları Ekle veya Güncelle (Upsert mantığı)
-      if (finalProductId && amazonVendorId) {
-        // Amazon satıcısı için fiyat güncellemesi/eklemesi
+      if (finalProductId && activeVendorId) {
           const { data: existingPrice } = await supabase.from('product_prices')
           .select('id, price')
           .eq('product_id', finalProductId)
-          .eq('vendor_id', amazonVendorId)
+          .eq('vendor_id', activeVendorId)
           .single();
 
         if (existingPrice) {
@@ -121,28 +132,26 @@ export async function POST(request: Request) {
              product_url: url
            }).eq('id', existingPrice.id);
 
-           // Eğer fiyat değişmişse logla (Eski fiyat != Yeni fiyat)
            if (existingPrice.price !== extractedPrice) {
               await supabase.from('price_history').insert({
                   product_id: finalProductId,
-                  vendor_id: amazonVendorId,
+                  vendor_id: activeVendorId,
                   price: extractedPrice
               });
            }
         } else {
            await supabase.from('product_prices').insert({
              product_id: finalProductId,
-             vendor_id: amazonVendorId,
+             vendor_id: activeVendorId,
              price: extractedPrice,
              original_price: extractedOriginalPrice,
              product_url: url,
-             shipping_info: item.delivery || 'Prime Kargo Bedava'
+             shipping_info: item.delivery || 'Ücretsiz Kargo'
            });
 
-           // İlk taranışta da grafiğe bir başlangıç noktası atmak zorundayız
            await supabase.from('price_history').insert({
               product_id: finalProductId,
-              vendor_id: amazonVendorId,
+              vendor_id: activeVendorId,
               price: extractedPrice
            });
         }

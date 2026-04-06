@@ -22,7 +22,7 @@ import Image from 'next/image';
 
 import { Metadata } from 'next';
 
-export const dynamic = 'force-dynamic';
+export const revalidate = 3600; // 1 saatte bir önbelleği tazele (ISR)
 
 export async function generateMetadata({ params }: { params: { id: string } }): Promise<Metadata> {
   const { data: product } = await supabase
@@ -99,8 +99,45 @@ export default async function UrunDetay({ params }: { params: { id: string } }) 
     return new Intl.NumberFormat('tr-TR').format(price) + ' ₺';
   }
 
+  // JSON-LD Structured Data for Google
+  const jsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'Product',
+    name: product.title,
+    image: product.image_url,
+    description: product.title + ' en uygun fiyatlarla Piinti\'de.',
+    brand: {
+      '@type': 'Brand',
+      name: brandName,
+    },
+    offers: {
+      '@type': 'AggregateOffer',
+      priceCurrency: 'TRY',
+      lowPrice: lowestPrice,
+      offerCount: sortedPrices.length,
+      offers: sortedPrices.map(sp => ({
+        '@type': 'Offer',
+        price: sp.price,
+        url: sp.product_url,
+        seller: {
+          '@type': 'Organization',
+          name: sp.vendors?.name
+        }
+      }))
+    },
+    aggregateRating: product.rating ? {
+      '@type': 'AggregateRating',
+      ratingValue: product.rating,
+      reviewCount: product.reviews_count
+    } : undefined
+  };
+
   return (
     <main className="min-h-screen pb-16 bg-gray-50">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
       <div className="bg-white border-b border-slate-100 py-6 sticky top-0 z-40 shadow-sm backdrop-blur-md bg-white/90">
         <div className="max-w-7xl mx-auto px-6">
            <SearchForm />

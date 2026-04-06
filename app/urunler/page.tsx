@@ -82,7 +82,7 @@ export default async function UrunlerPage({ searchParams }: { searchParams: { q?
           {filteredProducts.map((product: any) => {
              const prices = product.product_prices || [];
              const minPrice = prices.length > 0 ? Math.min(...prices.map((p: any) => p.price)) : 0;
-             const formatPrice = (p: number) => new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY', minimumFractionDigits: 0 }).format(p);
+             const formatPrice = (p: number) => new Intl.NumberFormat('tr-TR').format(p) + ' ₺';
              const analytics = analyzePriceTrend(product.price_history || [], minPrice);
 
              return (
@@ -131,8 +131,22 @@ export default async function UrunlerPage({ searchParams }: { searchParams: { q?
              )
           })}
           {filteredProducts.length === 0 && (
-            <div className="col-span-full text-center py-20 text-slate-500 bg-white rounded-2xl border border-slate-100">
-              Bu kriterlere uygun ürün bulunamadı. Aramayı genişletmeyi veya farklı filtreler kullanmayı deneyin.
+            <div className="col-span-full py-32 px-6 flex flex-col items-center justify-center text-center bg-white rounded-[2rem] border border-slate-100 shadow-xl shadow-slate-100/50">
+              <div className="w-20 h-20 bg-slate-50 text-slate-300 rounded-3xl flex items-center justify-center mb-8">
+                <svg className="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v3m0 0v3m0-3h3m-3 0H7" />
+                </svg>
+              </div>
+              <h3 className="text-xl font-bold text-slate-900 mb-3 tracking-tight">Kanka Aradığını Bulamadık! 🕵️‍♂️</h3>
+              <p className="text-slate-500 font-medium mb-10 max-w-sm leading-relaxed">
+                Bu kriterlere uygun bir ürün şu an radarımızda yok. Filtreleri temizleyerek veya farklı bir arama yaparak tekrar deneyebilirsin.
+              </p>
+              <Link 
+                href="/urunler" 
+                className="bg-slate-900 hover:bg-primary text-white font-black px-10 py-4 rounded-2xl transition-all duration-300 shadow-xl shadow-slate-900/10 uppercase tracking-widest text-[10px]"
+              >
+                Filtreleri Temizle
+              </Link>
             </div>
           )}
         </div>
