@@ -1,0 +1,32 @@
+[
+  {
+    "title": "Samsung Galaxy S24 Ultra 256 GB | Titanyum Siyah (Samsung Türkiye Garantili)",
+    "brand": "Samsung",
+    "price": {
+      "value": 62499.00,
+      "currency": "TRY"
+    },
+    "originalPrice": 69999.00,
+    "image": "https://m.media-amazon.com/images/I/71R6U2V3eML._AC_SX679_.jpg",
+    "url": "https://www.amazon.com.tr/dp/B0CSB2W4K2",
+    "rating": 4.8,
+    "reviewsCount": 1250,
+    "delivery": "Yarın Kapında (Prime Ücretsiz)",
+    "isTrend": true
+  },
+  {
+    "title": "Apple AirPods Pro (2. Nesil) MagSafe Şarj Kutulu (USB-C)",
+    "brand": "Apple",
+    "price": {
+      "value": 8499.00,
+      "currency": "TRY"
+    },
+    "originalPrice": 9299.00,
+    "image": "https://m.media-amazon.com/images/I/61SUj2W5yXL._AC_SX679_.jpg",
+    "url": "https://www.amazon.com.tr/dp/B0CHX5R2C9",
+    "rating": 4.9,
+    "reviewsCount": 15400,
+    "delivery": "Ücretsiz Kargo",
+    "isTrend": true
+  }
+]

@@ -42,7 +42,7 @@ export async function generateMetadata({ params }: { params: { id: string } }): 
 
   const prices = product.product_prices || [];
   const minPrice = prices.length > 0 ? Math.min(...prices.map((p: any) => p.price)) : 0;
-  const priceText = minPrice > 0 ? `${new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY', minimumFractionDigits: 0 }).format(minPrice)}'den başlayan fiyatlarla. ` : '';
+  const priceText = minPrice > 0 ? `${new Intl.NumberFormat('tr-TR').format(minPrice)} ₺'den başlayan fiyatlarla. ` : '';
 
   const title = `${product.title} ${brandName} En Ucuz Fiyatı ve Özellikleri - Piinti`;
   const description = `${product.title} ${brandName} modelini ${priceText}${categoryName} kategorisindeki en güncel fiyatları, fiyat geçmişini ve mağaza karşılaştırmalarını Piinti'de görün.`;
@@ -96,7 +96,7 @@ export default async function UrunDetay({ params }: { params: { id: string } }) 
   const sortedPrices = [...prices].sort((a:any, b:any) => a.price - b.price);
 
   function formatPrice(price: number) {
-    return new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY', minimumFractionDigits: 0 }).format(price);
+    return new Intl.NumberFormat('tr-TR').format(price) + ' ₺';
   }
 
   return (
@@ -132,8 +132,11 @@ export default async function UrunDetay({ params }: { params: { id: string } }) 
                   </span>
                )}
                <div className="w-full h-full flex items-center justify-center relative z-10">
-                 {(!product.image_url || product.image_url === '📦') ? (
-                    <Package className="w-32 h-32 text-slate-200" />
+                 {(!product.image_url || product.image_url === '📦' || product.image_url === '📱' || product.image_url === '💻') ? (
+                    <div className="flex flex-col items-center gap-4 text-slate-300">
+                      <Store className="w-24 h-24 stroke-1 opacity-20" />
+                      <span className="text-[10px] font-black uppercase tracking-[0.3em] opacity-40">Görsel Yakında</span>
+                    </div>
                  ) : (product.image_url?.startsWith('http') || product.image_url?.startsWith('data:image')) ? (
                     <div className="relative w-full h-full">
                       <Image 

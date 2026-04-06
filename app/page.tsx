@@ -50,7 +50,7 @@ export default async function Home() {
   ];
 
   function formatPrice(price: number) {
-    return new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY', minimumFractionDigits: 0 }).format(price);
+    return new Intl.NumberFormat('tr-TR').format(price) + ' ₺';
   }
 
   const productsList = dbProducts || [];

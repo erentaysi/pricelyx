@@ -46,20 +46,30 @@ export async function POST(request: Request) {
     }
     const { data: finalBrands } = await supabase.from('brands').select('*');
 
-    // 3. Satıcıları Garantiye Al
-    const vendorNames = ['Amazon TR', 'Trendyol', 'Hepsiburada'];
+    // 3. Satıcıları Garantiye Al (Logolar ve Renklerle Birlikte)
+    const vendorsToSeed = [
+      { name: 'Amazon TR', logo: '📦', color: '#FF9900', url: 'https://www.amazon.com.tr' },
+      { name: 'Trendyol', logo: '🧡', color: '#F27A1A', url: 'https://www.trendyol.com' },
+      { name: 'Hepsiburada', logo: '🟠', color: '#FF6000', url: 'https://www.hepsiburada.com' },
+      { name: 'n11', logo: '🔴', color: '#E11D48', url: 'https://www.n11.com' },
+      { name: 'Çiçeksepeti', logo: '🌸', color: '#0047AD', url: 'https://www.ciceksepeti.com' }
+    ];
+
     const { data: existingVendors } = await supabase.from('vendors').select('*');
     const existingVendorNames = existingVendors?.map(v => v.name) || [];
     
-    for (const vName of vendorNames) {
-      if (!existingVendorNames.includes(vName)) {
-        await supabase.from('vendors').insert({ name: vName, url: 'https://www.' + vName.toLowerCase().replace(' ', '') + '.com' });
+    for (const v of vendorsToSeed) {
+      if (!existingVendorNames.includes(v.name)) {
+        await supabase.from('vendors').insert(v);
+      } else {
+        await supabase.from('vendors').update({ logo: v.logo, color: v.color, url: v.url }).eq('name', v.name);
       }
     }
     const { data: finalVendors } = await supabase.from('vendors').select('*');
 
     const getCatId = (s: string) => finalCategories?.find(c => c.slug === s)?.id;
     const getBrandId = (n: string) => finalBrands?.find(b => b.name === n)?.id;
+    const getVendorId = (n: string) => finalVendors?.find(v => v.name === n)?.id;
 
     // 4. 30 Altın Ürün Seti
     const rawProducts = [
@@ -140,36 +150,39 @@ export async function POST(request: Request) {
         insertedCount++;
 
         // Add Prices across up to 3 vendors
-        const prices = [];
-        // Base Vendor (Amazon)
-        prices.push({
-          product_id: productId,
-          vendor_id: finalVendors?.[0]?.id,
-          price: raw.p,
-          original_price: raw.op,
-          product_url: 'https://amazon.com.tr/test-link',
-          shipping_info: 'Ücretsiz Kargo (Prime)'
-        });
-        
-        // Trendyol (Slightly more expensive or same)
-        prices.push({
-          product_id: productId,
-          vendor_id: finalVendors?.[1]?.id,
-          price: raw.p + (raw.p * 0.03), // 3% higher
-          original_price: raw.op,
-          product_url: 'https://trendyol.com/test-link',
-          shipping_info: 'Kargo Bedava'
-        });
+        const amazonId = getVendorId('Amazon TR');
+        const trendyolId = getVendorId('Trendyol');
+        const hepsiburadaId = getVendorId('Hepsiburada');
 
-        // Hepsiburada
-        prices.push({
-          product_id: productId,
-          vendor_id: finalVendors?.[2]?.id,
-          price: raw.p - (raw.p * 0.01), // 1% cheaper
-          original_price: null,
-          product_url: 'https://hepsiburada.com/test-link',
-          shipping_info: 'Yarın Kapında'
-        });
+        const prices = [
+          { 
+            product_id: productId,
+            vendor_id: amazonId, 
+            price: raw.p, 
+            original_price: raw.op, 
+            product_url: `https://www.amazon.com.tr/s?k=${encodeURIComponent(raw.t)}`,
+            shipping_info: 'Ücretsiz Kargo (Prime)',
+            in_stock: true
+          },
+          { 
+            product_id: productId,
+            vendor_id: trendyolId, 
+            price: raw.p + (raw.p * 0.03), 
+            original_price: raw.op, 
+            product_url: `https://www.trendyol.com/sr?q=${encodeURIComponent(raw.t)}`,
+            shipping_info: 'Kargo Bedava',
+            in_stock: true
+          },
+          { 
+            product_id: productId,
+            vendor_id: hepsiburadaId, 
+            price: raw.p - (raw.p * 0.01), 
+            original_price: null, 
+            product_url: `https://www.hepsiburada.com/ara?q=${encodeURIComponent(raw.t)}`,
+            shipping_info: 'Yarın Kapında',
+            in_stock: true
+          }
+        ].filter(p => p.vendor_id); // vendor_id varsa ekle
 
         await supabase.from('product_prices').insert(prices);
 

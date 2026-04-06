@@ -17,7 +17,7 @@ export default function AICoach() {
   const [isOpen, setIsOpen] = useState(false);
   const [isMinimized, setIsMinimized] = useState(false);
   const [messages, setMessages] = useState([
-    { id: 1, role: 'bot', text: 'Selam kankam! Ben Piinti AI. 🧐 Sana en uygun ürünü bulmada veya fiyat analizi yapmada yardımcı olabilirim. Ne arıyorsun?' }
+    { id: 1, role: 'bot', text: 'Hoş geldiniz. Piinti AI Asistanı size yardımcı olmaya hazır. İhtiyacınız olan ürünler veya fiyat analizleri hakkında bilgi alabilirsiniz. Size nasıl yardımcı olabilirim?' }
   ]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -57,7 +57,7 @@ export default function AICoach() {
       setMessages(prev => [...prev, { 
         id: Date.now() + 1, 
         role: 'bot', 
-        text: 'Üzgünüm kankam, şu an bağlantı kuramıyorum. Biraz sonra tekrar dener misin? 🤖' 
+        text: 'Üzgünüm, şu anda hizmet veremiyorum. Lütfen daha sonra tekrar deneyiniz. 🤖' 
       }]);
     } finally {
       setIsLoading(false);
@@ -129,7 +129,7 @@ export default function AICoach() {
                     {isLoading && (
                         <div className="flex justify-start items-center gap-3 text-slate-400 p-2">
                            <Loader2 className="w-5 h-5 animate-spin" />
-                           <span className="text-xs font-bold uppercase tracking-widest italic opacity-50">Kankan Düşünüyor...</span>
+                           <span className="text-xs font-bold uppercase tracking-widest italic opacity-50">Yanıt hazırlanıyor...</span>
                         </div>
                     )}
                 </div>
@@ -142,7 +142,7 @@ export default function AICoach() {
                             value={input}
                             onChange={(e) => setInput(e.target.value)}
                             onKeyDown={(e) => e.key === 'Enter' && handleSend()}
-                            placeholder="Kankana bir şeyler sor..." 
+                            placeholder="Sorunuzu buraya yazabilirsiniz..." 
                             className="w-full bg-slate-100 border-none rounded-2xl py-4 pl-6 pr-14 text-sm font-bold focus:ring-2 focus:ring-primary/20 transition-all placeholder:text-slate-400"
                         />
                         <button 
@@ -154,7 +154,7 @@ export default function AICoach() {
                         </button>
                     </div>
                     <p className="text-[9px] text-slate-400 text-center mt-4 font-bold uppercase tracking-widest opacity-50">
-                        Piinti AI bazen hatalı bilgi üretebilir. Her zaman fiyatı kontrol edin.
+                        Piinti AI model tabanlı bir asistan olup doğruluğu için fiyatları kontrol etmenizi öneririz.
                     </p>
                 </div>
             </>
