@@ -1,3 +1,4 @@
+// Piinti - Türkiye'nin Akıllı Fiyat Karşılaştırma Motoru (Redeploy Trigger)
 import type { Metadata } from "next";
 import "./globals.css";
 import Link from 'next/link';
