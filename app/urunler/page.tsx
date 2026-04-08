@@ -39,7 +39,7 @@ export default async function UrunlerPage({ searchParams }: { searchParams: { q?
     categories!inner(name, slug),
     product_prices(price),
     price_history(price, recorded_at)
-  `);
+  `).order('created_at', { ascending: false });
 
   if (q) {
     query = query.ilike('title', `%${q}%`);
@@ -82,7 +82,7 @@ export default async function UrunlerPage({ searchParams }: { searchParams: { q?
           {filteredProducts.map((product: any) => {
              const prices = product.product_prices || [];
              const minPrice = prices.length > 0 ? Math.min(...prices.map((p: any) => p.price)) : 0;
-             function formatPrice(price: number) {
+             function trPrice(price: number) {
                return new Intl.NumberFormat('tr-TR', { maximumFractionDigits: 0 }).format(Math.round(price)) + ' ₺';
              }
              const analytics = analyzePriceTrend(product.price_history || [], minPrice);
@@ -123,7 +123,7 @@ export default async function UrunlerPage({ searchParams }: { searchParams: { q?
                     </div>
                   </div>
                   <div className="text-left mt-auto">
-                    <div className={`text-2xl font-black ${analytics.trend === 'best' || analytics.trend === 'good' ? 'text-emerald-600' : analytics.trend === 'bad' ? 'text-rose-600' : 'text-slate-900'}`}>{minPrice > 0 ? formatPrice(minPrice) : 'Fiyat Yok'}</div>
+                    <div className={`text-2xl font-black ${analytics.trend === 'best' || analytics.trend === 'good' ? 'text-emerald-600' : analytics.trend === 'bad' ? 'text-rose-600' : 'text-slate-900'}`}>{minPrice > 0 ? trPrice(minPrice) : 'Fiyat Yok'}</div>
                     <div className="mt-2 text-xs font-semibold text-slate-500 flex items-center gap-1">
                        🏪 {prices.length} mağazada
                     </div>

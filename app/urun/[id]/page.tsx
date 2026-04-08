@@ -95,7 +95,7 @@ export default async function UrunDetay({ params }: { params: { id: string } }) 
   const lowestPrice = prices.length > 0 ? Math.min(...prices.map((p:any) => p.price)) : 0;
   const sortedPrices = [...prices].sort((a:any, b:any) => a.price - b.price);
 
-  function formatPrice(price: number) {
+  function trPrice(price: number) {
     return new Intl.NumberFormat('tr-TR', { maximumFractionDigits: 0 }).format(Math.round(price)) + ' ₺';
   }
 
@@ -247,7 +247,7 @@ export default async function UrunDetay({ params }: { params: { id: string } }) 
             <div className="bg-slate-900 p-8 rounded-[2rem] mb-10 flex flex-col sm:flex-row items-start sm:items-center justify-between shadow-2xl shadow-slate-900/10 border border-slate-800 gap-8">
               <div>
                 <p className="text-xs font-bold text-slate-500 mb-2 uppercase tracking-widest">En Rekabetçi Fiyat</p>
-                <p className="text-5xl font-black text-white tracking-tighter">{lowestPrice > 0 ? formatPrice(lowestPrice) : 'Fiyat Yok'}</p>
+                <p className="text-5xl font-black text-white tracking-tighter">{lowestPrice > 0 ? trPrice(lowestPrice) : 'Fiyat Yok'}</p>
               </div>
               <div className="flex flex-col items-center gap-4 w-full sm:w-auto">
                 <PriceAlertModal productId={product.id} productTitle={product.title} currentPrice={lowestPrice} />
@@ -338,7 +338,7 @@ export default async function UrunDetay({ params }: { params: { id: string } }) 
                     </div>
                     
                     <div className="flex flex-col items-end gap-3 text-right">
-                       <span className="text-3xl font-black text-slate-900 tracking-tighter">{formatPrice(storeConfig.price)}</span>
+                       <span className="text-3xl font-black text-slate-900">{trPrice(storeConfig.price)}</span>
                        <a href={storeConfig.product_url} target="_blank" rel="noopener noreferrer" className="text-xs font-black bg-slate-900 hover:bg-primary text-white px-8 py-4 rounded-xl transition-all duration-300 shadow-xl shadow-slate-900/10 w-full md:w-auto text-center uppercase tracking-widest">
                          Mağazaya İlerle
                        </a>

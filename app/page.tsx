@@ -31,7 +31,7 @@ export default async function Home() {
       price_history (price, recorded_at)
     `)
     .eq('is_trend', true)
-    .order('id', { ascending: false }) // En yeni eklenenleri önce göster
+    .order('created_at', { ascending: false }) // En yeni eklenen ürünleri en başta göster
     .limit(8);
 
   // Dinamik Sayaçlar için veritabanı sorguları
@@ -50,7 +50,7 @@ export default async function Home() {
     { id: 8, name: "Kitap & Hobi", icon: <Book className="w-8 h-8" />, productCount: 9200, slug: "kitap-hobi", color: "bg-amber-50 text-amber-600" }
   ];
 
-  function formatPrice(price: number) {
+  function trPrice(price: number) {
     return new Intl.NumberFormat('tr-TR', { maximumFractionDigits: 0 }).format(Math.round(price)) + ' ₺';
   }
 
@@ -164,7 +164,7 @@ export default async function Home() {
                                     </div>
                                     <div className="mt-auto">
                                       <div className="flex items-baseline gap-2 mb-3">
-                                          <span className={`text-2xl font-black ${analytics.trend === 'best' || analytics.trend === 'good' ? 'text-emerald-600' : analytics.trend === 'bad' ? 'text-rose-600' : 'text-gray-900'}`}>{minPrice > 0 ? formatPrice(minPrice) : 'Fiyat Yok'}</span>
+                                          <span className={`text-2xl font-black ${analytics.trend === 'best' || analytics.trend === 'good' ? 'text-emerald-600' : analytics.trend === 'bad' ? 'text-rose-600' : 'text-gray-900'}`}>{minPrice > 0 ? trPrice(minPrice) : 'Fiyat Yok'}</span>
                                       </div>
                                       <div className="text-[11px] font-bold text-gray-400 flex items-center gap-2 pt-3 border-t border-slate-100">
                                         <Database className="w-3 h-3" /> {prices.length} farklı satıcıda karşılaştırıldı
