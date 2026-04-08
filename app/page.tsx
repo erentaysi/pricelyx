@@ -89,7 +89,7 @@ export default async function Home() {
           <div className="container mx-auto px-4">
               <div className="flex flex-col md:flex-row md:items-end justify-between mb-12 gap-4">
                 <div>
-                  <h2 className="text-3xl md:text-4xl font-bold text-gray-800 mb-2">Popüler Kategoriler</h2>
+                <text x="45" y="32" fontFamily="'Inter', sans-serif" fontSize="26" fontWeight="900" fill="url(#logoGradient)">Piinti v2</text>
                   <p className="text-gray-500">İhtiyacın olan her şey burada.</p>
                 </div>
                 <Link href="/urunler" className="text-primary font-semibold hover:underline">Tümünü Gör →</Link>
@@ -164,7 +164,7 @@ export default async function Home() {
                                     </div>
                                     <div className="mt-auto">
                                       <div className="flex items-baseline gap-2 mb-3">
-                                          <span className={`text-2xl font-black ${analytics.trend === 'best' || analytics.trend === 'good' ? 'text-emerald-600' : analytics.trend === 'bad' ? 'text-rose-600' : 'text-gray-900'}`}>{minPrice > 0 ? trPrice(minPrice) : 'Fiyat Yok'}</span>
+                                          <span className={`text-2xl font-black ${analytics.trend === 'best' || analytics.trend === 'good' ? 'text-emerald-600' : analytics.trend === 'bad' ? 'text-rose-600' : 'text-gray-900'}`}>{minPrice > 0 ? trPrice(minPrice) : 'Fiyat Yok'} {/* cache-bust-v2 */}</span>
                                       </div>
                                       <div className="text-[11px] font-bold text-gray-400 flex items-center gap-2 pt-3 border-t border-slate-100">
                                         <Database className="w-3 h-3" /> {prices.length} farklı satıcıda karşılaştırıldı
