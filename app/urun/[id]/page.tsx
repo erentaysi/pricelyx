@@ -96,7 +96,7 @@ export default async function UrunDetay({ params }: { params: { id: string } }) 
   const sortedPrices = [...prices].sort((a:any, b:any) => a.price - b.price);
 
   function formatPrice(price: number) {
-    return new Intl.NumberFormat('tr-TR', { maximumFractionDigits: 0 }).format(price) + ' ₺';
+    return new Intl.NumberFormat('tr-TR', { maximumFractionDigits: 0 }).format(Math.round(price)) + ' ₺';
   }
 
   // JSON-LD Structured Data for Google

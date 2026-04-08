@@ -51,7 +51,7 @@ export default async function Home() {
   ];
 
   function formatPrice(price: number) {
-    return new Intl.NumberFormat('tr-TR', { maximumFractionDigits: 0 }).format(price) + ' ₺';
+    return new Intl.NumberFormat('tr-TR', { maximumFractionDigits: 0 }).format(Math.round(price)) + ' ₺';
   }
 
   const productsList = dbProducts || [];
