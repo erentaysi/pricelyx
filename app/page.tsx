@@ -31,6 +31,7 @@ export default async function Home() {
       price_history (price, recorded_at)
     `)
     .eq('is_trend', true)
+    .order('id', { ascending: false }) // En yeni eklenenleri önce göster
     .limit(8);
 
   // Dinamik Sayaçlar için veritabanı sorguları
@@ -50,7 +51,7 @@ export default async function Home() {
   ];
 
   function formatPrice(price: number) {
-    return new Intl.NumberFormat('tr-TR').format(price) + ' ₺';
+    return new Intl.NumberFormat('tr-TR', { maximumFractionDigits: 0 }).format(price) + ' ₺';
   }
 
   const productsList = dbProducts || [];

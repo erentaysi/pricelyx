@@ -82,7 +82,9 @@ export default async function UrunlerPage({ searchParams }: { searchParams: { q?
           {filteredProducts.map((product: any) => {
              const prices = product.product_prices || [];
              const minPrice = prices.length > 0 ? Math.min(...prices.map((p: any) => p.price)) : 0;
-             const formatPrice = (p: number) => new Intl.NumberFormat('tr-TR').format(p) + ' ₺';
+             function formatPrice(price: number) {
+               return new Intl.NumberFormat('tr-TR', { maximumFractionDigits: 0 }).format(price) + ' ₺';
+             }
              const analytics = analyzePriceTrend(product.price_history || [], minPrice);
 
              return (
