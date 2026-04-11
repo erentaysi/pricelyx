@@ -6,13 +6,18 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "brain": "node scripts/piinti-brain.js"
   },
   "dependencies": {
     "@supabase/ssr": "^0.10.2",
     "@supabase/supabase-js": "^2.103.0",
+    "chalk": "^4.1.2",
+    "dotenv": "^17.4.1",
     "lucide-react": "^0.378.0",
     "next": "14.2.3",
+    "node-cron": "^4.2.1",
+    "nodemailer": "^8.0.5",
     "puppeteer-core": "^24.40.0",
     "puppeteer-extra": "^3.3.6",
     "puppeteer-extra-plugin-stealth": "^2.11.2",
