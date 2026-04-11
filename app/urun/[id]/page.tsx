@@ -107,12 +107,12 @@ export default async function UrunDetay({ params }: { params: { id: string } }) 
   const jsonLd = {
     '@context': 'https://schema.org',
     '@type': 'Product',
-    name: product.title,
-    image: product.image_url,
-    description: product.title + ' en uygun fiyatlarla Piinti\'de.',
+    name: product.title || 'Ürün',
+    image: product.image_url || '',
+    description: (product.title || 'Ürün') + ' en uygun fiyatlarla Piinti\'de.',
     brand: {
       '@type': 'Brand',
-      name: brandName,
+      name: brandName || 'Diğer',
     },
     offers: {
       '@type': 'AggregateOffer',

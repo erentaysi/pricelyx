@@ -16,10 +16,25 @@ export function generateProductSlug(title: string, id: string): string {
 }
 
 export function extractIdFromSlug(slugId: string): string {
-    // Format is "apple-iphone-15-pro-max-[UUID]"
-    // UUID format is 8-4-4-4-12, total 36 chars.
-    if (slugId.length > 36) {
-        return slugId.slice(-36);
+    // Proje UUID tabanlı olduğu için (8-4-4-4-12 = 36 karakter)
+    // Eğer slug sonunda bir UUID varsa onu ayıklar.
+    // Örnek: "apple-iphone-15-uuid-1234..." -> "1234..."
+    
+    if (!slugId) return '';
+
+    // UUID regex pattern (36 characters)
+    const uuidRegex = /[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/i;
+    const match = slugId.match(uuidRegex);
+    
+    if (match) {
+        return match[0];
     }
-    return slugId; // Fallback if it's just the ID
+
+    // Eğer regex bulamazsa ama uzunluk 36 ise direkt kendisidir (legacy support)
+    if (slugId.length === 36) {
+        return slugId;
+    }
+
+    // fallback: sondan 36 karakteri dene (UUID formatında değilse bile)
+    return slugId.length > 36 ? slugId.slice(-36) : slugId;
 }

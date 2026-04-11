@@ -10,23 +10,23 @@ const nextConfig = {
       },
       {
         protocol: 'https',
-        hostname: 'cdn.dsmcdn.com', // Trendyol
+        hostname: '**.dsmcdn.com', // Trendyol dynamic CDNs
       },
       {
         protocol: 'https',
-        hostname: 'productimages.hepsiburada.net', // Hepsiburada
+        hostname: '**.hepsiburada.net', // Hepsiburada dynamic CDNs
       },
       {
         protocol: 'https',
-        hostname: 'm.media-amazon.com', // Amazon
+        hostname: '**.media-amazon.com', // Amazon dynamic CDNs
       },
       {
         protocol: 'https',
-        hostname: 'n11-image.akamaized.net', // N11
+        hostname: '**.akamaized.net', // Akamai based CDNs (N11 etc)
       },
       {
         protocol: 'https',
-        hostname: 'cdn03.ciceksepeti.com', // Ciceksepeti
+        hostname: '**.ciceksepeti.com',
       }
     ],
   },

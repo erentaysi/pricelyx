@@ -15,7 +15,7 @@ async function scrapeHepsiburada() {
     // Launch browser
     const browser = await puppeteer.launch({ 
         headless: "new",
-        executablePath: "C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe",
+        executablePath: process.env.CHROME_PATH || "C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe",
         args: ['--no-sandbox', '--disable-setuid-sandbox']
     });
     
@@ -40,24 +40,26 @@ async function scrapeHepsiburada() {
         try {
             await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 60000 });
             
-            await page.waitForSelector('[data-test-id="product-card-container"]', { timeout: 15000 }).catch(() => console.log('Products missing for ' + query));
+            // Wait for product cards to load (Flexible selectors)
+            await page.waitForSelector('[data-test-id="product-card-container"], .productListContent-item', { timeout: 15000 })
+                .catch(() => console.log('Products missing for ' + query));
 
             const products = await page.evaluate(() => {
-                const cards = document.querySelectorAll('[data-test-id="product-card-container"]');
+                const cards = document.querySelectorAll('[data-test-id="product-card-container"], .productListContent-item');
                 const results = [];
                 cards.forEach((card, i) => {
                     if (i >= 20) return; 
                     
                     const aTag = card.querySelector('a');
-                    const imgTag = card.querySelector('img[data-test-id="product-image-image"]');
-                    const titleTag = card.querySelector('h3[data-test-id="product-card-name"]');
-                    const priceTag = card.querySelector('[data-test-id="price-current-price"]');
+                    const imgTag = card.querySelector('img');
+                    const titleTag = card.querySelector('h3, [class*="product-title"]');
+                    const priceTag = card.querySelector('[data-test-id="price-current-price"], [class*="price-current"]');
                     
-                    if(aTag && titleTag && priceTag) {
+                    if(aTag && (titleTag || imgTag) && priceTag) {
                         let link = aTag.href;
                         if(!link.includes('hepsiburada')) link = 'https://www.hepsiburada.com' + aTag.getAttribute('href');
                         
-                        const imgUrl = imgTag ? imgTag.src : '📦';
+                        const imgUrl = imgTag ? (imgTag.src || imgTag.getAttribute('data-src')) : '';
                         const title = titleTag.innerText.trim();
                         // Assume first word is brand for simple parsing
                         const brand = title.split(' ')[0] || 'Diğer'; 

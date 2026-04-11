@@ -15,7 +15,7 @@ async function scrapeTrendyol() {
     // Launch browser
     const browser = await puppeteer.launch({ 
         headless: "new",
-        executablePath: "C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe",
+        executablePath: process.env.CHROME_PATH || "C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe",
         args: ['--no-sandbox', '--disable-setuid-sandbox', '--window-size=1920,1080']
     });
     
@@ -38,27 +38,28 @@ async function scrapeTrendyol() {
         try {
             await page.goto(url, { waitUntil: 'networkidle2', timeout: 60000 });
             
-            // Wait for product cards to load
-            await page.waitForSelector('.p-card-wrppr', { timeout: 15000 }).catch(() => console.log('Products missing for ' + query));
+            // Wait for product cards to load (Trying multiple possible selectors)
+            await page.waitForSelector('.p-card-wrppr, .p-card-chldrn-cntnr, [data-id]', { timeout: 15000 })
+                .catch(() => console.log('Products missing for ' + query));
 
             // Extract data from the DOM
             const products = await page.evaluate(() => {
-                const cards = document.querySelectorAll('.p-card-wrppr');
+                const cards = document.querySelectorAll('.p-card-wrppr, .p-card-chldrn-cntnr');
                 const results = [];
                 cards.forEach((card, i) => {
                     if (i >= 20) return; // Top 20 per query
                     
                     const aTag = card.querySelector('a');
-                    const imgTag = card.querySelector('.p-card-img');
-                    const brandTag = card.querySelector('.prdct-desc-cntnr-ttl');
-                    const nameTag = card.querySelector('.prdct-desc-cntnr-name') || card.querySelector('.prdct-desc-cntnr-name-p');
-                    const priceTag = card.querySelector('.prc-box-dscntd');
+                    const imgTag = card.querySelector('img');
+                    const brandTag = card.querySelector('.prdct-desc-cntnr-ttl, .product-brand');
+                    const nameTag = card.querySelector('.prdct-desc-cntnr-name, .product-name');
+                    const priceTag = card.querySelector('.prc-box-dscntd, .product-price');
                     
-                    if(aTag && nameTag && priceTag) {
+                    if(aTag && (nameTag || brandTag) && priceTag) {
                         const link = aTag.href.includes('trendyol') ? aTag.href : 'https://www.trendyol.com' + aTag.getAttribute('href');
-                        const imgUrl = imgTag ? imgTag.src : '📦';
+                        const imgUrl = imgTag ? (imgTag.src || imgTag.getAttribute('data-src')) : '';
                         const brand = brandTag ? brandTag.innerText.trim() : 'Diğer';
-                        const name = nameTag.innerText.trim();
+                        const name = nameTag ? nameTag.innerText.trim() : '';
                         
                         // Parse price "42.999 TL" -> 42999
                         const rawPrice = priceTag.innerText.replace(/[^0-9,]/g, '').replace(',', '.');
