@@ -44,38 +44,45 @@ async function scrapeHepsiburada() {
             await page.waitForSelector('[data-test-id="product-card-container"], .productListContent-item', { timeout: 15000 })
                 .catch(() => console.log('Products missing for ' + query));
 
+            // Extract data from the DOM with extra-resilient logic
             const products = await page.evaluate(() => {
-                const cards = document.querySelectorAll('[data-test-id="product-card-container"], .productListContent-item');
                 const results = [];
-                cards.forEach((card, i) => {
-                    if (i >= 20) return; 
-                    
-                    const aTag = card.querySelector('a');
-                    const imgTag = card.querySelector('img');
-                    const titleTag = card.querySelector('h3, [class*="product-title"]');
-                    const priceTag = card.querySelector('[data-test-id="price-current-price"], [class*="price-current"]');
-                    
-                    if(aTag && (titleTag || imgTag) && priceTag) {
-                        let link = aTag.href;
-                        if(!link.includes('hepsiburada')) link = 'https://www.hepsiburada.com' + aTag.getAttribute('href');
-                        
-                        const imgUrl = imgTag ? (imgTag.src || imgTag.getAttribute('data-src')) : '';
-                        const title = titleTag.innerText.trim();
-                        // Assume first word is brand for simple parsing
-                        const brand = title.split(' ')[0] || 'Diğer'; 
-                        
-                        const rawPrice = priceTag.innerText.replace(/[^0-9,]/g, '').replace(',', '.');
-                        const priceNum = parseFloat(rawPrice);
+                
+                // Strategy: Find price elements first, then climb up to the container
+                const allElements = Array.from(document.querySelectorAll('*'));
+                const priceElements = allElements.filter(el => {
+                    const text = el.innerText || '';
+                    return (text.includes('₺') || text.includes('TL')) && text.length < 20 && /[0-9]/.test(text);
+                });
 
-                        if(!isNaN(priceNum)) {
-                            results.push({
-                                title: title,
-                                brand: brand,
-                                price: priceNum,
-                                image: imgUrl,
-                                url: link.split('?')[0],
-                                rating: Math.random() > 0.5 ? 4.5 : 5.0
-                            });
+                priceElements.forEach((priceEl, i) => {
+                    if (results.length >= 25) return;
+
+                    // Climp up to find a container (usually a div, li or anchor)
+                    let container = priceEl.parentElement;
+                    while (container && container.tagName !== 'BODY' && container.offsetHeight < 100) {
+                        container = container.parentElement;
+                    }
+
+                    if (container && !results.some(r => r.id === container.innerText.substring(0, 10))) {
+                        const aTag = container.querySelector('a') || (container.tagName === 'A' ? container : null);
+                        const imgTag = container.querySelector('img');
+                        const textContent = container.innerText.split('\n').filter(t => t.trim().length > 3);
+                        
+                        if (aTag && textContent.length >= 2) {
+                            const priceText = priceEl.innerText.replace(/[^0-9,]/g, '').replace(',', '.');
+                            const priceNum = parseFloat(priceText);
+
+                            if (!isNaN(priceNum) && priceNum > 0) {
+                                results.push({
+                                    id: container.innerText.substring(0, 10), // temporary ID for de-duplication
+                                    title: textContent[0] + ' ' + (textContent[1] || ''),
+                                    brand: textContent[0],
+                                    price: priceNum,
+                                    image: imgTag ? (imgTag.src || imgTag.getAttribute('data-src')) : '',
+                                    url: aTag.href
+                                });
+                            }
                         }
                     }
                 });

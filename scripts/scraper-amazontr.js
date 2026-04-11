@@ -15,7 +15,7 @@ async function scrapeAmazon() {
     // Launch browser
     const browser = await puppeteer.launch({ 
         headless: "new",
-        executablePath: "C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe",
+        executablePath: process.env.CHROME_PATH || "C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe",
         args: ['--no-sandbox', '--disable-setuid-sandbox']
     });
     
@@ -35,31 +35,33 @@ async function scrapeAmazon() {
         const url = `https://www.amazon.com.tr/s?k=${encodeURIComponent(query)}`;
         
         try {
-            await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 60000 });
+            await page.goto(url, { waitUntil: 'networkidle2', timeout: 60000 });
             
-            await page.waitForSelector('[data-component-type="s-search-result"]', { timeout: 15000 }).catch(() => console.log('Products missing for ' + query));
+            // Wait for results with fallback
+            await page.waitForSelector('.s-result-item, [data-component-type="s-search-result"]', { timeout: 15000 })
+                .catch(() => console.log('Products missing for ' + query));
 
             const products = await page.evaluate(() => {
-                const cards = document.querySelectorAll('[data-component-type="s-search-result"]');
+                const cards = document.querySelectorAll('.s-result-item[data-component-type="s-search-result"]');
                 const results = [];
                 cards.forEach((card, i) => {
                     if (i >= 20) return; 
                     
-                    const aTag = card.querySelector('a.a-link-normal.s-no-outline');
+                    const aTag = card.querySelector('a.a-link-normal');
                     const imgTag = card.querySelector('img.s-image');
-                    const titleTag = card.querySelector('h2 span.a-text-normal');
+                    const titleTag = card.querySelector('h2, .a-size-base-plus, .a-size-medium');
                     const priceWhole = card.querySelector('.a-price-whole');
                     const priceFraction = card.querySelector('.a-price-fraction');
                     
-                    if(aTag && titleTag && priceWhole) {
+                    if(aTag && (titleTag || imgTag) && priceWhole) {
                         let link = aTag.href;
                         if(!link.includes('amazon.com.tr')) link = 'https://www.amazon.com.tr' + aTag.getAttribute('href');
                         
-                        const imgUrl = imgTag ? imgTag.src : '📦';
+                        const imgUrl = imgTag ? imgTag.src : '';
                         const title = titleTag.innerText.trim();
                         const brand = title.split(' ')[0] || 'Diğer'; 
                         
-                        const rawPriceStr = priceWhole.innerText.replace(/[^0-9]/g, '') + '.' + (priceFraction ? priceFraction.innerText : '00');
+                        const rawPriceStr = priceWhole.innerText.replace(/[^0-9]/g, '') + '.' + (priceFraction ? priceFraction.innerText.replace(/[^0-9]/g, '') : '00');
                         const priceNum = parseFloat(rawPriceStr);
 
                         if(!isNaN(priceNum)) {
