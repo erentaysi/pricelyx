@@ -29,7 +29,7 @@ export default function Navbar() {
               </defs>
               <path d="M 10 35 L 10 15 C 10 10 15 5 20 5 L 30 5 C 35 5 40 10 40 15 C 40 20 35 25 30 25 L 20 25 M 10 25 L 35 45" 
                 stroke="url(#logoGradient)" strokeWidth="3" fill="none" strokeLinecap="round" strokeLinejoin="round"/>
-              <text x="45" y="32" fontFamily="'Inter', sans-serif" fontSize="26" fontWeight="900" fill="url(#logoGradient)">Piinti v2</text>
+              <text x="45" y="32" fontFamily="'Inter', sans-serif" fontSize="26" fontWeight="900" fill="url(#logoGradient)">Piinti</text>
               <text x="48" y="42" fontFamily="'Inter', sans-serif" fontSize="8" fontWeight="600" fill="#94a3b8" letterSpacing="1">PREMIUM ANALYTICS</text>
             </svg>
           </Link>

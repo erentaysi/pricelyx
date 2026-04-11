@@ -89,7 +89,7 @@ export default async function Home() {
           <div className="container mx-auto px-4">
               <div className="flex flex-col md:flex-row md:items-end justify-between mb-12 gap-4">
                 <div>
-                <text x="45" y="32" fontFamily="'Inter', sans-serif" fontSize="26" fontWeight="900" fill="url(#logoGradient)">Piinti v2</text>
+                
                   <p className="text-gray-500">İhtiyacın olan her şey burada.</p>
                 </div>
                 <Link href="/urunler" className="text-primary font-semibold hover:underline">Tümünü Gör →</Link>
