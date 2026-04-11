@@ -1,11 +1,29 @@
 "use client";
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { Menu, X } from 'lucide-react';
+import { Menu, X, User } from 'lucide-react';
+import { createClient } from '@/lib/supabase/client';
 
 export default function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
+  const [session, setSession] = useState<any>(null);
+
+  useEffect(() => {
+    const supabase = createClient();
+    
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+    });
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      setSession(session);
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
 
   const navLinks = [
     { name: "Ana Sayfa", href: "/" },
@@ -45,6 +63,17 @@ export default function Navbar() {
                 {link.name}
               </Link>
             ))}
+            
+            {/* User Auth Info */}
+            {session ? (
+              <Link href="/profil" className="flex items-center gap-2 bg-slate-50 hover:bg-teal-50 text-slate-700 hover:text-teal-700 border border-slate-200 hover:border-teal-200 px-4 py-2 rounded-xl text-sm font-bold transition-all shadow-sm">
+                <User className="w-4 h-4" /> Profilim
+              </Link>
+            ) : (
+              <Link href="/giris" className="bg-slate-900 hover:bg-slate-800 text-white px-5 py-2.5 rounded-xl text-sm font-bold transition-all shadow-lg shadow-slate-900/10 active:scale-95">
+                Giriş Yap
+              </Link>
+            )}
           </div>
 
           {/* Mobile Menu Button */}

@@ -1,8 +1,9 @@
 import { NextResponse } from 'next/server';
-import { supabase } from '@/lib/supabase';
+import { createClient } from '@/lib/supabase/server';
 
 export async function POST(request: Request) {
   try {
+    const supabase = createClient();
     const { productId, email, targetPrice } = await request.json();
 
     if (!productId || !email || !targetPrice) {
@@ -20,6 +21,10 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Lütfen geçerli bir fiyat girin.' }, { status: 400 });
     }
 
+    // SSR User Kontrolü
+    const { data: authData } = await supabase.auth.getUser();
+    const userId = authData?.user?.id || null;
+
     const { data: existingAlert } = await supabase
       .from('price_alerts')
       .select('id')
@@ -31,7 +36,7 @@ export async function POST(request: Request) {
       // Alarm zaten var ise sadece fiyatı güncelleyelim
       const { error: updateError } = await supabase
         .from('price_alerts')
-        .update({ target_price: priceNum, is_active: true })
+        .update({ target_price: priceNum, is_active: true, user_id: userId })
         .eq('id', existingAlert.id);
 
       if (updateError) throw updateError;
@@ -46,7 +51,8 @@ export async function POST(request: Request) {
         product_id: productId,
         email: email,
         target_price: priceNum,
-        is_active: true
+        is_active: true,
+        user_id: userId
       });
 
     if (insertError) throw insertError;
@@ -58,3 +64,4 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Alarm kurulurken bir hata oluştu.' }, { status: 500 });
   }
 }
+

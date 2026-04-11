@@ -5,6 +5,7 @@ import Link from 'next/link';
 import PriceHistoryChart from '@/app/components/PriceHistoryChart';
 import PriceAlertModal from '@/app/components/PriceAlertModal';
 import ReviewSummary from '@/app/components/ReviewSummary';
+import FavoriteButton from '@/app/components/FavoriteButton';
 import { 
   Star, 
   Truck, 
@@ -188,7 +189,7 @@ export default async function UrunDetay({ params }: { params: { id: string } }) 
                </div>
                
                <div className="absolute top-6 right-6 flex flex-col gap-3 z-10">
-                 <button className="w-12 h-12 bg-white/80 backdrop-blur border border-slate-100 text-slate-400 hover:text-rose-500 hover:border-rose-100 rounded-2xl flex items-center justify-center shadow-xl transition-all duration-300 hover:scale-110">♡</button>
+                 <FavoriteButton productId={product.id} />
                  <button className="w-12 h-12 bg-white/80 backdrop-blur border border-slate-100 text-slate-400 hover:text-primary hover:border-primary/20 rounded-2xl flex items-center justify-center shadow-xl transition-all duration-300 hover:scale-110">Share</button>
                </div>
             </div>

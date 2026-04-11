@@ -1,5 +1,5 @@
 'use client';
-import { useState, FormEvent } from 'react';
+import { useState, useEffect, FormEvent } from 'react';
 import { Bell, X, CheckCircle, Loader2 } from 'lucide-react';
 
 interface Props {
@@ -15,6 +15,20 @@ export default function PriceAlertModal({ productId, productTitle, currentPrice 
   const [loading, setLoading] = useState(false);
   const [status, setStatus] = useState<'idle' | 'success' | 'error'>('idle');
   const [message, setMessage] = useState('');
+  const [user, setUser] = useState<any>(null);
+
+  useEffect(() => {
+     const initSession = async () => {
+         const { createClient } = await import('@/lib/supabase/client');
+         const supabase = createClient();
+         const { data: { session } } = await supabase.auth.getSession();
+         if(session?.user) {
+             setUser(session.user);
+             setEmail(session.user.email || '');
+         }
+     };
+     initSession();
+  }, []);
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -104,8 +118,9 @@ export default function PriceAlertModal({ productId, productTitle, currentPrice 
                     required 
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
+                    disabled={user !== null}
                     placeholder="sanaulasalim@gmail.com" 
-                    className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-teal-500 focus:outline-none transition-all placeholder-slate-400"
+                    className={`w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-teal-500 focus:outline-none transition-all placeholder-slate-400 ${user ? 'opacity-60 cursor-not-allowed text-slate-500' : 'text-slate-800'}`}
                   />
                 </div>
                 
