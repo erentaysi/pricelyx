@@ -132,11 +132,9 @@ export default async function Home() {
                                     <span>{analytics.icon}</span> {analytics.message}
                                   </div>
 
-                                  {(!product.image_url || !(product.image_url?.startsWith('http') || product.image_url?.includes('data:image'))) ? (
-                                    <div className="relative w-full h-full opacity-60 mix-blend-multiply group-hover:opacity-100 transition-opacity duration-500">
-                                      <Image src="/placeholder.png" alt="Görsel Bekleniyor" fill className="object-contain p-4" priority />
-                                    </div>
-                                  ) : (
+                                  {(!product.image_url || product.image_url === '📦') ? (
+                                    <Package className="w-20 h-20 text-slate-200" />
+                                  ) : (product.image_url?.startsWith('http') || product.image_url?.includes('data:image')) ? (
                                     <div className="relative w-full h-full">
                                       <Image 
                                         src={product.image_url.replace('http://', 'https://')} 
@@ -147,6 +145,8 @@ export default async function Home() {
                                         loading="lazy"
                                       />
                                     </div>
+                                  ) : (
+                                    <span className="text-4xl">{product.image_url}</span>
                                   )}
                                   <div className="absolute top-4 left-4 bg-white/90 backdrop-blur-sm text-primary text-[10px] font-black px-3 py-1 rounded-full shadow-sm border border-slate-100 z-10 uppercase tracking-widest">🔥 Trend</div>
                                 </div>

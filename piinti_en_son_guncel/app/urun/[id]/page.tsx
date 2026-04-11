@@ -42,7 +42,7 @@ export async function generateMetadata({ params }: { params: { id: string } }): 
 
   const prices = product.product_prices || [];
   const minPrice = prices.length > 0 ? Math.min(...prices.map((p: any) => p.price)) : 0;
-  const priceText = minPrice > 0 ? `${new Intl.NumberFormat('tr-TR', { maximumFractionDigits: 0 }).format(Math.round(minPrice))} ₺'den başlayan fiyatlarla. ` : '';
+  const priceText = minPrice > 0 ? `${new Intl.NumberFormat('tr-TR').format(minPrice)} ₺'den başlayan fiyatlarla. ` : '';
 
   const title = `${product.title} ${brandName} En Ucuz Fiyatı ve Özellikleri - Piinti`;
   const description = `${product.title} ${brandName} modelini ${priceText}${categoryName} kategorisindeki en güncel fiyatları, fiyat geçmişini ve mağaza karşılaştırmalarını Piinti'de görün.`;
@@ -169,11 +169,12 @@ export default async function UrunDetay({ params }: { params: { id: string } }) 
                   </span>
                )}
                <div className="w-full h-full flex items-center justify-center relative z-10">
-                 {(!product.image_url || !(product.image_url?.startsWith('http') || product.image_url?.includes('data:image'))) ? (
-                    <div className="relative w-full h-full opacity-60 mix-blend-multiply transition-opacity duration-700 hover:opacity-100">
-                      <Image src="/placeholder.png" alt="Görsel Bekleniyor" fill priority className="object-contain p-8" />
+                 {(!product.image_url || product.image_url === '📦' || product.image_url === '📱' || product.image_url === '💻') ? (
+                    <div className="flex flex-col items-center gap-4 text-slate-300">
+                      <Store className="w-24 h-24 stroke-1 opacity-20" />
+                      <span className="text-[10px] font-black uppercase tracking-[0.3em] opacity-40">Görsel Yakında</span>
                     </div>
-                 ) : (
+                 ) : (product.image_url?.startsWith('http') || product.image_url?.startsWith('data:image')) ? (
                     <div className="relative w-full h-full">
                       <Image 
                         src={product.image_url.replace('http://', 'https://')} 
@@ -184,6 +185,10 @@ export default async function UrunDetay({ params }: { params: { id: string } }) 
                         className="object-contain group-hover:scale-105 transition-transform duration-700" 
                       />
                     </div>
+                  ) : (
+                    <span className="text-9xl group-hover:scale-110 transition-transform duration-700 select-none">
+                      {product.image_url}
+                    </span>
                   )}
                </div>
                
@@ -196,11 +201,9 @@ export default async function UrunDetay({ params }: { params: { id: string } }) 
             <div className="grid grid-cols-4 gap-4 mt-6">
                {[1,2,3,4].map(idx => (
                  <div key={idx} className="bg-white border border-slate-100 aspect-square rounded-2xl flex items-center justify-center cursor-pointer hover:border-primary/50 transition-all opacity-40 hover:opacity-100 overflow-hidden p-3 shadow-sm">
-                   {(!product.image_url || !(product.image_url?.startsWith('http') || product.image_url?.includes('data:image'))) ? (
-                      <div className="relative w-full h-full opacity-40 mix-blend-multiply">
-                        <Image src="/placeholder.png" alt="Görsel Bekleniyor" fill className="object-contain p-2" />
-                      </div>
-                   ) : (
+                   {(!product.image_url || product.image_url === '📦') ? (
+                      <Package className="w-8 h-8 text-slate-200" />
+                   ) : (product.image_url?.startsWith('http') || product.image_url?.startsWith('data:image')) ? (
                       <div className="relative w-full h-full">
                         <Image 
                           src={product.image_url.replace('http://', 'https://')} 
@@ -210,6 +213,8 @@ export default async function UrunDetay({ params }: { params: { id: string } }) 
                           className="object-contain" 
                         />
                       </div>
+                    ) : (
+                      <span className="text-xl">{product.image_url}</span>
                     )}
                  </div>
                ))}

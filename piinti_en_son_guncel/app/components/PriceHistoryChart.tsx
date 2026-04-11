@@ -73,12 +73,12 @@ export default function PriceHistoryChart({ historyData }: Props) {
             axisLine={false} 
             tickLine={false} 
             tick={{ fontSize: 12, fill: '#94a3b8' }}
-            tickFormatter={(value) => `${value} ₺`}
+            tickFormatter={(value) => `₺${value}`}
             dx={-10}
           />
           <Tooltip 
             contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1)', fontWeight: 'bold' }}
-            formatter={(value: any) => [`${new Intl.NumberFormat('tr-TR', { maximumFractionDigits: 0 }).format(Math.round(value))} ₺`, 'Fiyat']}
+            formatter={(value: any) => [`${value} TL`, 'Fiyat']}
             labelStyle={{ color: '#64748b', marginBottom: '4px' }}
           />
           <Line 

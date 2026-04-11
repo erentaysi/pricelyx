@@ -96,11 +96,7 @@ export default async function UrunlerPage({ searchParams }: { searchParams: { q?
                       {analytics.icon} {analytics.message}
                     </div>
 
-                    {(!product.image_url || !(product.image_url?.startsWith('http') || product.image_url?.includes('data:image'))) ? (
-                      <div className="relative w-full h-full opacity-60 mix-blend-multiply group-hover:opacity-100 transition-opacity duration-300">
-                        <Image src="/placeholder.png" alt="Görsel Bekleniyor" fill className="object-contain p-4" loading="lazy" />
-                      </div>
-                    ) : (
+                    {(product.image_url?.startsWith('http') || product.image_url?.startsWith('data:image')) ? (
                       <div className="relative w-full h-full">
                         <Image 
                           src={product.image_url.replace('http://', 'https://')} 
@@ -111,6 +107,10 @@ export default async function UrunlerPage({ searchParams }: { searchParams: { q?
                           loading="lazy"
                         />
                       </div>
+                    ) : (
+                      <span className="text-6xl group-hover:scale-110 transition-transform duration-300 break-all text-center">
+                        {product.image_url}
+                      </span>
                     )}
                   </div>
                   <div className="flex-1 text-left">
