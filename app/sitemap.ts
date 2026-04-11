@@ -1,5 +1,6 @@
 import { MetadataRoute } from 'next';
 import { supabase } from '@/lib/supabase';
+import { generateProductSlug } from '@/lib/utils';
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const baseUrl = 'https://www.piinti.com';
@@ -7,10 +8,10 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   // Get all products
   const { data: products } = await supabase
     .from('products')
-    .select('id');
+    .select('id, title');
 
   const productUrls = (products || []).map((product) => ({
-    url: `${baseUrl}/urun/${product.id}`,
+    url: `${baseUrl}/urun/${generateProductSlug(product.title, product.id)}`,
     lastModified: new Date(),
     changeFrequency: 'daily' as const,
     priority: 0.8,

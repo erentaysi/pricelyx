@@ -16,6 +16,7 @@ import {
   Package
 } from 'lucide-react';
 import Image from 'next/image';
+import { generateProductSlug } from '@/lib/utils';
 import { analyzePriceTrend } from '@/lib/analytics';
 
 export const dynamic = 'force-dynamic';
@@ -125,7 +126,7 @@ export default async function Home() {
                         const analytics = analyzePriceTrend(product.price_history || [], minPrice);
                         
                         return (
-                            <Link href={`/urun/${product.id}`} key={product.id} className="group bg-white rounded-2xl border border-slate-100 product-card-hover overflow-hidden flex flex-col">
+                            <Link href={`/urun/${generateProductSlug(product.title, product.id)}`} key={product.id} className="group bg-white rounded-2xl border border-slate-100 product-card-hover overflow-hidden flex flex-col">
                                 <div className="relative h-56 bg-slate-50 flex items-center justify-center overflow-hidden p-6">
                                   {/* Dynamic Analytics Badge */}
                                   <div className={`absolute top-4 right-4 ${analytics.trend === 'bad' ? 'bg-rose-500' : analytics.color} text-white text-[10px] font-black px-3 py-1 rounded-full shadow-lg z-10 uppercase tracking-widest flex items-center gap-1 scale-90 origin-right group-hover:scale-100 transition-transform`}>

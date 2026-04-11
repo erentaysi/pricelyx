@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
+import { generateProductSlug } from '@/lib/utils';
 
 export default function Kampanyalar() {
   const [countdown, setCountdown] = useState("00:00:00");
@@ -80,7 +81,7 @@ export default function Kampanyalar() {
                                   <span className="text-2xl font-bold text-red-500">{product.price} ₺</span>
                                   <span className="text-sm text-gray-400 line-through">{product.oldPrice} ₺</span>
                               </div>
-                              <Link href={`/urun/${product.id}`} className="block w-full bg-red-500 hover:bg-red-600 text-white text-center py-2 rounded-lg font-semibold transition">
+                              <Link href={`/urun/${generateProductSlug(product.title, product.id)}`} className="block w-full bg-red-500 hover:bg-red-600 text-white text-center py-2 rounded-lg font-semibold transition">
                                   Hemen Al
                               </Link>
                           </div>

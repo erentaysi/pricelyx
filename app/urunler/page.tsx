@@ -4,6 +4,7 @@ import FilterSidebar from "./FilterSidebar";
 import { Metadata } from 'next';
 import { analyzePriceTrend } from "@/lib/analytics";
 import Image from "next/image";
+import { generateProductSlug } from "@/lib/utils";
 
 export const dynamic = 'force-dynamic';
 
@@ -88,7 +89,7 @@ export default async function UrunlerPage({ searchParams }: { searchParams: { q?
              const analytics = analyzePriceTrend(product.price_history || [], minPrice);
 
              return (
-              <Link href={`/urun/${product.id}`} key={product.id}>
+              <Link href={`/urun/${generateProductSlug(product.title, product.id)}`} key={product.id}>
                 <div className="bg-white border text-center border-slate-100 rounded-2xl p-5 product-card-hover cursor-pointer group flex flex-col h-full overflow-hidden">
                   <div className="bg-slate-50 rounded-xl h-48 mb-4 flex items-center justify-center p-4 overflow-hidden relative">
                     {/* Analytics Badge */}

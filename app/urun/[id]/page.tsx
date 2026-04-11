@@ -1,5 +1,6 @@
 import { notFound } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
+import { extractIdFromSlug } from '@/lib/utils';
 import SearchForm from '@/app/components/SearchForm';
 import Link from 'next/link';
 import PriceHistoryChart from '@/app/components/PriceHistoryChart';
@@ -26,10 +27,11 @@ import { Metadata } from 'next';
 export const revalidate = 3600; // 1 saatte bir önbelleği tazele (ISR)
 
 export async function generateMetadata({ params }: { params: { id: string } }): Promise<Metadata> {
+  const actualId = extractIdFromSlug(params.id);
   const { data: product } = await supabase
     .from('products')
     .select('title, categories(name), brands(name), image_url, product_prices(price)')
-    .eq('id', params.id)
+    .eq('id', actualId)
     .single();
 
   if (!product) {
@@ -60,6 +62,7 @@ export async function generateMetadata({ params }: { params: { id: string } }): 
 }
 
 export default async function UrunDetay({ params }: { params: { id: string } }) {
+  const actualId = extractIdFromSlug(params.id);
   const { data: product } = await supabase
     .from('products')
     .select(`
@@ -80,7 +83,7 @@ export default async function UrunDetay({ params }: { params: { id: string } }) 
         recorded_at
       )
     `)
-    .eq('id', params.id)
+    .eq('id', actualId)
     .single();
 
   if (!product) {
