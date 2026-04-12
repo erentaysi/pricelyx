@@ -18,6 +18,7 @@ import {
 import Image from 'next/image';
 import { generateProductSlug } from '@/lib/utils';
 import { analyzePriceTrend } from '@/lib/analytics';
+import ProductCard from '@/app/components/ProductCard';
 
 export const dynamic = 'force-dynamic';
 
@@ -120,61 +121,9 @@ export default async function Home() {
                 </div>
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-6">
-                    {productsList.map((product: any) => {
-                        const prices = product.product_prices || [];
-                        const minPrice = prices.length > 0 ? Math.min(...prices.map((p: any) => p.price)) : 0;
-                        const analytics = analyzePriceTrend(product.price_history || [], minPrice);
-                        
-                        return (
-                            <Link href={`/urun/${generateProductSlug(product.title, product.id)}`} key={product.id} className="group bg-white rounded-2xl border border-slate-100 product-card-hover overflow-hidden flex flex-col">
-                                <div className="relative h-56 bg-slate-50 flex items-center justify-center overflow-hidden p-6">
-                                  {/* Dynamic Analytics Badge */}
-                                  <div className={`absolute top-4 right-4 ${analytics.trend === 'bad' ? 'bg-rose-500' : analytics.color} text-white text-[10px] font-black px-3 py-1 rounded-full shadow-lg z-10 uppercase tracking-widest flex items-center gap-1 scale-90 origin-right group-hover:scale-100 transition-transform`}>
-                                    <span>{analytics.icon}</span> {analytics.message}
-                                  </div>
-
-                                  {(!product.image_url || !(product.image_url?.startsWith('http') || product.image_url?.includes('data:image'))) ? (
-                                    <div className="relative w-full h-full opacity-60 mix-blend-multiply group-hover:opacity-100 transition-opacity duration-500">
-                                      <Image src="/placeholder.png" alt="Görsel Bekleniyor" fill className="object-contain p-4" priority />
-                                    </div>
-                                  ) : (
-                                    <div className="relative w-full h-full">
-                                      <Image 
-                                        src={product.image_url.replace('http://', 'https://')} 
-                                        alt={`${product.title} - En Uygun Fiyat Karşılaştırması`}
-                                        fill
-                                        sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
-                                        className="object-contain group-hover:scale-105 transition-transform duration-500" 
-                                        loading="lazy"
-                                      />
-                                    </div>
-                                  )}
-                                  <div className="absolute top-4 left-4 bg-white/90 backdrop-blur-sm text-primary text-[10px] font-black px-3 py-1 rounded-full shadow-sm border border-slate-100 z-10 uppercase tracking-widest">🔥 Trend</div>
-                                </div>
-                                <div className="p-6 flex flex-col flex-1">
-                                    <div className="text-[10px] font-bold text-primary uppercase tracking-widest mb-1">{product.brands?.name || 'Bilinmiyor'}</div>
-                                    <h3 className="font-bold text-gray-800 mb-3 line-clamp-2 h-12 text-base leading-tight group-hover:text-primary transition-colors">{product.title}</h3>
-                                    <div className="flex items-center gap-1.5 mb-4 text-xs">
-                                        <div className="flex text-yellow-400">
-                                          {[...Array(5)].map((_, i) => (
-                                            <span key={i}>{i < Math.floor(product.rating) ? '★' : '☆'}</span>
-                                          ))}
-                                        </div>
-                                        <span className="font-bold text-gray-700">{product.rating}</span>
-                                        <span className="text-gray-400 font-medium">({product.reviews_count})</span>
-                                    </div>
-                                    <div className="mt-auto">
-                                      <div className="flex items-baseline gap-2 mb-3">
-                                          <span className={`text-2xl font-black ${analytics.trend === 'best' || analytics.trend === 'good' ? 'text-emerald-600' : analytics.trend === 'bad' ? 'text-rose-600' : 'text-gray-900'}`}>{minPrice > 0 ? trPrice(minPrice) : 'Fiyat Yok'} {/* cache-bust-v2 */}</span>
-                                      </div>
-                                      <div className="text-[11px] font-bold text-gray-400 flex items-center gap-2 pt-3 border-t border-slate-100">
-                                        <Database className="w-3 h-3" /> {prices.length} farklı satıcıda karşılaştırıldı
-                                      </div>
-                                    </div>
-                                </div>
-                            </Link>
-                        );
-                    })}
+                    {productsList.map((product: any) => (
+                        <ProductCard key={product.id} product={product} />
+                    ))}
                 </div>
               )}
           </div>

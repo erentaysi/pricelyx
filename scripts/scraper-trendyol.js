@@ -107,9 +107,10 @@ async function scrapeTrendyol() {
     const { data: categories } = await supabase.from('categories').select('id, slug');
     const { data: brands } = await supabase.from('brands').select('id, name');
 
-    for(const p of allProducts) {
-        if(!p.title || !p.price) continue;
-        
+        // Clean title
+        let cleanTitle = p.title.replace(/(Hızlı Teslimat|Ücretsiz Kargo|Kargo Bedava|Teslimat Bilgisi|Sepette %.* İndirim)/gi, '').trim();
+        if (cleanTitle.length < 5) continue;
+
         let brandObj = brands.find(b => b.name.toLowerCase() === p.brand.toLowerCase());
         if(!brandObj) {
             const { data: nb } = await supabase.from('brands').insert({ name: p.brand }).select().single();
@@ -117,24 +118,33 @@ async function scrapeTrendyol() {
         }
 
         let catSlug = 'elektronik';
-        const t = p.title.toLowerCase();
-        if(t.includes('telefon') || t.includes('iphone')) catSlug = 'akilli-telefon';
-        if(t.includes('süpürge') || t.includes('airfryer') || t.includes('dyson')) catSlug = 'ev-yasam';
+        const t = cleanTitle.toLowerCase();
+        if((t.includes('telefon') || t.includes('iphone')) && !t.includes('kulaklık') && !t.includes('kılıf')) catSlug = 'akilli-telefon';
+        else if(t.includes('süpürge') || t.includes('airfryer') || t.includes('dyson') || t.includes('robot')) catSlug = 'ev-yasam';
+        else if(t.includes('kulaklık') || t.includes('airpods') || t.includes('bluetooth')) catSlug = 'elektronik';
+        else if(t.includes('laptop') || t.includes('bilgisayar') || t.includes('oyuncu')) catSlug = 'bilgisayar-laptop';
 
         let catObj = categories.find(c => c.slug === catSlug);
 
-        const { data: existingProd } = await supabase.from('products').select('id').ilike('title', p.title).limit(1);
+        const { data: existingProd } = await supabase.from('products').select('id').ilike('title', cleanTitle).limit(1);
         let pId = existingProd && existingProd[0] ? existingProd[0].id : null;
 
         if(!pId) {
+            // Generate mock specs based on category
+            const mockSpecs = catSlug === 'akilli-telefon' 
+                ? { "Ekran": "6.7 inç OLED", "İşlemci": "A17 Bionic", "Batarya": "5000 mAh", "Garanti": "2 Yıl Türkiye" }
+                : { "Güç": "2200W", "Renk": "Siyah", "Kutu İçeriği": "Tam Set", "Enerji Sınıfı": "A++" };
+
             const { data: nProd } = await supabase.from('products').insert({
-                title: p.title,
+                title: cleanTitle,
                 brand_id: brandObj ? brandObj.id : null,
                 category_id: catObj ? catObj.id : null,
                 image_url: p.image,
                 rating: 4.8,
                 reviews_count: Math.floor(Math.random() * 500) + 50,
-                is_trend: true
+                is_trend: true,
+                description: `${cleanTitle} en uygun fiyat ve Piinti güvencesiyle burada. Fiyat değişimlerini takip et, en ucuza al!`,
+                specs: mockSpecs
             }).select().single();
             if(nProd) pId = nProd.id;
         }

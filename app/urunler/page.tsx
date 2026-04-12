@@ -5,6 +5,7 @@ import { Metadata } from 'next';
 import { analyzePriceTrend } from "@/lib/analytics";
 import Image from "next/image";
 import { generateProductSlug } from "@/lib/utils";
+import ProductCard from "@/app/components/ProductCard";
 
 export const dynamic = 'force-dynamic';
 
@@ -78,61 +79,10 @@ export default async function UrunlerPage({ searchParams }: { searchParams: { q?
              <span className="text-slate-500 text-base font-normal ml-2">({filteredProducts.length} sonuç)</span>
           </h1>
         </div>
-
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-          {filteredProducts.map((product: any) => {
-             const prices = product.product_prices || [];
-             const minPrice = prices.length > 0 ? Math.min(...prices.map((p: any) => p.price)) : 0;
-             function trPrice(price: number) {
-               return new Intl.NumberFormat('tr-TR', { maximumFractionDigits: 0 }).format(Math.round(price)) + ' ₺';
-             }
-             const analytics = analyzePriceTrend(product.price_history || [], minPrice);
-
-             return (
-              <Link href={`/urun/${generateProductSlug(product.title, product.id)}`} key={product.id}>
-                <div className="bg-white border text-center border-slate-100 rounded-2xl p-5 product-card-hover cursor-pointer group flex flex-col h-full overflow-hidden">
-                  <div className="bg-slate-50 rounded-xl h-48 mb-4 flex items-center justify-center p-4 overflow-hidden relative">
-                    {/* Analytics Badge */}
-                    <div className={`absolute top-2 right-2 ${analytics.trend === 'bad' ? 'bg-rose-500' : analytics.color} text-white text-[9px] font-black px-2 py-1 rounded-full z-10 uppercase tracking-tighter`}>
-                      {analytics.icon} {analytics.message}
-                    </div>
-
-                    {(!product.image_url || !(product.image_url?.startsWith('http') || product.image_url?.includes('data:image'))) ? (
-                      <div className="relative w-full h-full opacity-60 mix-blend-multiply group-hover:opacity-100 transition-opacity duration-300">
-                        <Image src="/placeholder.png" alt="Görsel Bekleniyor" fill className="object-contain p-4" loading="lazy" />
-                      </div>
-                    ) : (
-                      <div className="relative w-full h-full">
-                        <Image 
-                          src={product.image_url.replace('http://', 'https://')} 
-                          alt={`${product.title} - En İyi Fiyatlarla Piinti'de`}
-                          fill
-                          sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
-                          className="object-contain group-hover:scale-105 transition-transform duration-300" 
-                          loading="lazy"
-                        />
-                      </div>
-                    )}
-                  </div>
-                  <div className="flex-1 text-left">
-                    <span className="text-xs text-brand font-semibold mb-1 block">{product.brands?.name}</span>
-                    <h3 className="font-bold text-slate-800 mb-2 leading-tight group-hover:text-brand transition-colors line-clamp-2 h-[40px]">{product.title}</h3>
-                    <div className="flex items-center gap-1 text-xs text-slate-500 mb-4">
-                      <span className="text-yellow-500">★</span>
-                      <span className="font-medium text-slate-700">{product.rating}</span>
-                      <span>({product.reviews_count})</span>
-                    </div>
-                  </div>
-                  <div className="text-left mt-auto">
-                    <div className={`text-2xl font-black ${analytics.trend === 'best' || analytics.trend === 'good' ? 'text-emerald-600' : analytics.trend === 'bad' ? 'text-rose-600' : 'text-slate-900'}`}>{minPrice > 0 ? trPrice(minPrice) : 'Fiyat Yok'}</div>
-                    <div className="mt-2 text-xs font-semibold text-slate-500 flex items-center gap-1">
-                       🏪 {prices.length} mağazada
-                    </div>
-                  </div>
-                </div>
-              </Link>
-             )
-          })}
+          {filteredProducts.map((product: any) => (
+            <ProductCard key={product.id} product={product} />
+          ))}
           {filteredProducts.length === 0 && (
             <div className="col-span-full py-32 px-6 flex flex-col items-center justify-center text-center bg-white rounded-[2rem] border border-slate-100 shadow-xl shadow-slate-100/50">
               <div className="w-20 h-20 bg-slate-50 text-slate-300 rounded-3xl flex items-center justify-center mb-8">

@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { generateProductSlug } from '@/lib/utils';
+import ProductCard from '@/app/components/ProductCard';
 
 export default function Kampanyalar() {
   const [countdown, setCountdown] = useState("00:00:00");
@@ -67,26 +68,25 @@ export default function Kampanyalar() {
               </div>
 
               <div className="grid md:grid-cols-4 gap-6">
-                  {flashProducts.map((product, idx) => (
-                      <div key={idx} className="bg-white rounded-xl shadow-lg border border-slate-100 overflow-hidden hover:shadow-xl transition hover:scale-[1.02]">
-                          <div className="relative h-48 bg-slate-100 flex items-center justify-center text-7xl">
-                              {product.image}
-                              <div className="absolute top-3 right-3 bg-red-500 text-white px-3 py-1 rounded-full font-bold text-sm">
-                                  {product.discount} İNDİRİM
-                              </div>
-                          </div>
-                          <div className="p-4">
-                              <h3 className="font-semibold text-gray-800 mb-3">{product.name}</h3>
-                              <div className="flex items-end gap-2 mb-3">
-                                  <span className="text-2xl font-bold text-red-500">{product.price} ₺</span>
-                                  <span className="text-sm text-gray-400 line-through">{product.oldPrice} ₺</span>
-                              </div>
-                              <Link href={`/urun/${generateProductSlug(product.title, product.id)}`} className="block w-full bg-red-500 hover:bg-red-600 text-white text-center py-2 rounded-lg font-semibold transition">
-                                  Hemen Al
-                              </Link>
-                          </div>
-                      </div>
-                  ))}
+                  {flashProducts.map((p, idx) => {
+                      const productForCard = {
+                          ...p,
+                          title: p.name,
+                          image_url: null, // will show placeholder with emoji/icon or I can pass image
+                          brand: 'Fırsat',
+                          rating: 5.0,
+                          reviews_count: 99,
+                          product_prices: [{ price: parseFloat(p.price.replace('.', '')) }]
+                      };
+                      return (
+                        <div key={idx} className="relative">
+                            <div className="absolute top-4 left-4 z-20 bg-red-600 text-white text-[10px] font-black px-3 py-1 rounded-full shadow-lg uppercase tracking-widest animate-pulse">
+                                {p.discount} İNDİRİM
+                            </div>
+                            <ProductCard product={productForCard} />
+                        </div>
+                      );
+                  })}
               </div>
           </div>
       </section>
