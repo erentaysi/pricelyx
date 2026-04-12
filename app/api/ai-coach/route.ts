@@ -21,7 +21,7 @@ Kullanıcılara karşı nazik, profesyonel ve kurumsal bir dille hitap edersiniz
 Analizlerinizde nesnel, yardımcı ve güvenilir bir profil çizmelisiniz.
 Eğer fiyat analizi istenirse, Piinti'nin n8n ve Apify kullanarak pazar yerlerini anlık taradığını ve en güncel verileri sunduğunu belirtin.`;
 
-    const modelName = 'gemini-1.5-flash';
+    const modelName = 'gemini-pro';
     
     try {
       const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`, {
