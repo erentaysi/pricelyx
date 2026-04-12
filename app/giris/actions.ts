@@ -42,7 +42,7 @@ export async function signup(formData: FormData) {
   }
 
   revalidatePath('/', 'layout');
-  redirect('/profil');
+  redirect('/giris?message=Kayıt Başarılı! Lütfen e-postanı onaylamak için gelen kutunu kontrol et.');
 }
 
 export async function logout() {

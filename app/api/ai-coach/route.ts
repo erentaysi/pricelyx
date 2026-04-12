@@ -41,8 +41,12 @@ Eğer fiyat analizi istenirse, Piinti'nin n8n ve Apify kullanarak pazar yerlerin
       if (data.error) {
         console.error('Gemini API Error:', JSON.stringify(data.error, null, 2));
         
-        let friendlyMsg = 'Üzgünüm, şu anda hizmet veremiyorum (Sistem Hatası). Lütfen daha sonra tekrar deneyiniz.';
-        if (data.error.message?.includes('API key')) friendlyMsg = "Kankam API anahtarında bir sorun var, kontrol eder misin?";
+        const errCode = data.error.code || 'Bilinmiyor';
+        const errMsg = data.error.message || 'Detay yok';
+        
+        let friendlyMsg = `Üzgünüm kankam, şu anda AI motoru bir hata verdi. (Kod: ${errCode})`;
+        if (errMsg.includes('API key')) friendlyMsg = "Kankam Vercel/Railway'deki GEMINI_API_KEY anahtarında bir sorun var gibi görünüyor, kontrol eder misin?";
+        if (errMsg.includes('quota')) friendlyMsg = "Kankam bu anahtarın ücretsiz kullanım limiti dolmuş gibi görünüyor.";
         
         return NextResponse.json({ 
           role: 'bot', 
