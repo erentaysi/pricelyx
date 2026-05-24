@@ -167,9 +167,12 @@ async function startNeuralNetwork() {
         log('--- RUTİN AV DÖNGÜSÜ BAŞLADI ---', 'info');
         
         await runScraper('scraper-trendyol.js');
-        // İstersen burada saniye bekleme ekleyebilirsin: await new Promise(r => setTimeout(r, 5000));
+        await new Promise(r => setTimeout(r, 3000));
         await runScraper('scraper-hepsiburada.js');
+        await new Promise(r => setTimeout(r, 3000));
         await runScraper('scraper-amazontr.js');
+        await new Promise(r => setTimeout(r, 3000));
+        await runScraper('scraper-n11.js');
         
         await checkPriceAlerts();
         log('--- RUTİN AV DÖNGÜSÜ TAMAMLANDI ---', 'info');

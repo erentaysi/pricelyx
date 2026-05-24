@@ -34,7 +34,7 @@ export default async function Home() {
     `)
     .eq('is_trend', true)
     .order('created_at', { ascending: false }) // En yeni eklenen ürünleri en başta göster
-    .limit(8);
+    .limit(24);
 
   // Dinamik Sayaçlar için veritabanı sorguları
   const { count: productCount } = await supabase.from('products').select('*', { count: 'exact', head: true });

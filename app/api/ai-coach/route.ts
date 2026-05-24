@@ -21,7 +21,7 @@ Kullanıcılara karşı nazik, profesyonel ve kurumsal bir dille hitap edersiniz
 Analizlerinizde nesnel, yardımcı ve güvenilir bir profil çizmelisiniz.
 Eğer fiyat analizi istenirse, Piinti'nin n8n ve Apify kullanarak pazar yerlerini anlık taradığını ve en güncel verileri sunduğunu belirtin.`;
 
-    const modelName = 'gemini-pro';
+    const modelName = 'gemini-2.0-flash';
     
     try {
       const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`, {
@@ -36,6 +36,14 @@ Eğer fiyat analizi istenirse, Piinti'nin n8n ve Apify kullanarak pazar yerlerin
         })
       });
 
+      if (!response.ok) {
+        console.error('Gemini API HTTP Error:', response.status, response.statusText);
+        return NextResponse.json({ 
+          role: 'bot', 
+          text: `Yapay zeka servisine bağlanırken bir sorun oluştu (HTTP ${response.status}). Lütfen birkaç dakika sonra tekrar deneyiniz.` 
+        });
+      }
+
       const data = await response.json();
       
       if (data.error) {
@@ -44,9 +52,10 @@ Eğer fiyat analizi istenirse, Piinti'nin n8n ve Apify kullanarak pazar yerlerin
         const errCode = data.error.code || 'Bilinmiyor';
         const errMsg = data.error.message || 'Detay yok';
         
-        let friendlyMsg = `Üzgünüm kankam, şu anda AI motoru bir hata verdi. (Kod: ${errCode})`;
-        if (errMsg.includes('API key')) friendlyMsg = "Kankam Vercel/Railway'deki GEMINI_API_KEY anahtarında bir sorun var gibi görünüyor, kontrol eder misin?";
-        if (errMsg.includes('quota')) friendlyMsg = "Kankam bu anahtarın ücretsiz kullanım limiti dolmuş gibi görünüyor.";
+        let friendlyMsg = `Şu anda AI motorumuzda geçici bir sorun yaşanmaktadır. (Kod: ${errCode}). Lütfen kısa bir süre sonra tekrar deneyiniz.`;
+        if (errMsg.includes('API key') || errMsg.includes('API_KEY_INVALID')) friendlyMsg = "API anahtarı yapılandırmasında bir sorun tespit edildi. Sistem yöneticisi bilgilendirildi.";
+        if (errMsg.includes('quota') || errMsg.includes('RESOURCE_EXHAUSTED')) friendlyMsg = "Yapay zeka servisinin kullanım limiti geçici olarak dolmuştur. Kısa süre içinde tekrar aktif olacaktır.";
+        if (errMsg.includes('not found') || errMsg.includes('NOT_FOUND')) friendlyMsg = "İstenen AI modeli bulunamadı. Sistem otomatik olarak güncelleniyor.";
         
         return NextResponse.json({ 
           role: 'bot', 

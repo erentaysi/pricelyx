@@ -107,6 +107,9 @@ async function scrapeTrendyol() {
     const { data: categories } = await supabase.from('categories').select('id, slug');
     const { data: brands } = await supabase.from('brands').select('id, name');
 
+    for(const p of allProducts) {
+        if(!p.title || !p.price) continue;
+
         // Clean title
         let cleanTitle = p.title.replace(/(Hızlı Teslimat|Ücretsiz Kargo|Kargo Bedava|Teslimat Bilgisi|Sepette %.* İndirim)/gi, '').trim();
         if (cleanTitle.length < 5) continue;

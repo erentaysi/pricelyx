@@ -7,7 +7,12 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "brain": "node scripts/piinti-brain.js"
+    "brain": "node scripts/piinti-brain.js",
+    "scrape:trendyol": "node scripts/scraper-trendyol.js",
+    "scrape:hepsiburada": "node scripts/scraper-hepsiburada.js",
+    "scrape:amazon": "node scripts/scraper-amazontr.js",
+    "scrape:n11": "node scripts/scraper-n11.js",
+    "scrape:all": "node scripts/scraper-trendyol.js && node scripts/scraper-hepsiburada.js && node scripts/scraper-amazontr.js && node scripts/scraper-n11.js"
   },
   "dependencies": {
     "@supabase/ssr": "^0.10.2",

@@ -1,144 +1,170 @@
-"use client";
-
-import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { generateProductSlug } from '@/lib/utils';
+import { supabase } from '@/lib/supabase';
 import ProductCard from '@/app/components/ProductCard';
+import CountdownTimer from '@/app/components/CountdownTimer';
 
-export default function Kampanyalar() {
-  const [countdown, setCountdown] = useState("00:00:00");
+export const dynamic = 'force-dynamic';
 
-  useEffect(() => {
-    function updateCountdown() {
-        const now = new Date();
-        const tomorrow = new Date(now);
-        tomorrow.setHours(24, 0, 0, 0);
-        const diff = tomorrow.getTime() - now.getTime();
-        
-        const hours = Math.floor(diff / (1000 * 60 * 60));
-        const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-        const seconds = Math.floor((diff % (1000 * 60)) / 1000);
-        
-        setCountdown(`${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`);
-    }
-    const timer = setInterval(updateCountdown, 1000);
-    updateCountdown();
-    return () => clearInterval(timer);
-  }, []);
+export default async function Kampanyalar() {
+  // Veritabanından gerçek indirimli ürünleri çek (original_price > price)
+  const { data: discountedProducts } = await supabase
+    .from('products')
+    .select(`
+      id, title, image_url, rating, reviews_count, is_trend,
+      brands (name),
+      categories (slug),
+      product_prices!inner (price, original_price)
+    `)
+    .limit(12);
 
-  const flashProducts = [
-      { id: "p1", name: "iPhone 15 Pro", price: "52.999", oldPrice: "64.999", discount: "18%", image: "📱" },
-      { id: "p2", name: "Samsung S24", price: "48.999", oldPrice: "59.999", discount: "18%", image: "📱" },
-      { id: "p3", name: "MacBook Air", price: "42.999", oldPrice: "52.999", discount: "19%", image: "💻" },
-      { id: "p4", name: "Sony WH-1000XM5", price: "10.999", oldPrice: "14.999", discount: "27%", image: "🎧" }
-  ];
+  // Gelen ürünleri filtrele ve indirim oranı hesapla
+  let realDeals = [];
+  if (discountedProducts) {
+    realDeals = discountedProducts.map((p: any) => {
+      const prices = p.product_prices || [];
+      const bestPriceObj = prices.reduce((prev: any, curr: any) => (prev.price < curr.price ? prev : curr), prices[0] || { price: 0, original_price: 0 });
+      
+      let discountPercent = 0;
+      if (bestPriceObj.original_price > bestPriceObj.price) {
+        discountPercent = Math.round(((bestPriceObj.original_price - bestPriceObj.price) / bestPriceObj.original_price) * 100);
+      }
+      
+      return {
+        ...p,
+        calculatedDiscount: discountPercent
+      };
+    }).filter(p => p.calculatedDiscount > 0)
+      .sort((a, b) => b.calculatedDiscount - a.calculatedDiscount)
+      .slice(0, 8); // En yüksek indirimli 8 ürün
+  }
 
   return (
     <>
-      <section className="gradient-bg text-white py-20">
-          <div className="container mx-auto px-4 text-center">
-              <h1 className="text-5xl font-bold mb-4">🔥 Güncel Kampanyalar</h1>
-              <p className="text-xl text-white/90">En iyi fırsatları kaçırma!</p>
+      <section className="gradient-bg text-white py-20 relative overflow-hidden">
+          <div className="absolute inset-0 bg-[url('/pattern.png')] opacity-10"></div>
+          <div className="container mx-auto px-4 text-center relative z-10">
+              <h1 className="text-5xl md:text-6xl font-black mb-6 tracking-tight text-shadow-sm">🔥 Fırsat & Kampanyalar</h1>
+              <p className="text-xl md:text-2xl text-white/90 font-medium">Fiyatı dibe vuran ürünleri saniyeler içinde yakala!</p>
           </div>
       </section>
 
-      <section className="py-8 bg-white">
+      <section className="py-8 bg-white border-b border-slate-100 shadow-sm sticky top-0 z-40">
           <div className="container mx-auto px-4">
-              <div className="flex gap-4 overflow-x-auto pb-4">
-                  <button className="px-6 py-3 bg-primary text-white rounded-lg font-semibold whitespace-nowrap">🔥 Tüm Kampanyalar</button>
-                  <button className="px-6 py-3 bg-gray-100 text-gray-700 rounded-lg font-semibold whitespace-nowrap hover:bg-gray-200">📱 Elektronik</button>
-                  <button className="px-6 py-3 bg-gray-100 text-gray-700 rounded-lg font-semibold whitespace-nowrap hover:bg-gray-200">👕 Moda</button>
-                  <button className="px-6 py-3 bg-gray-100 text-gray-700 rounded-lg font-semibold whitespace-nowrap hover:bg-gray-200">🏠 Ev & Yaşam</button>
-                  <button className="px-6 py-3 bg-gray-100 text-gray-700 rounded-lg font-semibold whitespace-nowrap hover:bg-gray-200">💄 Kozmetik</button>
+              <div className="flex gap-4 overflow-x-auto pb-2 scrollbar-hide">
+                  <Link href="/urunler" className="px-6 py-3 bg-red-500 hover:bg-red-600 text-white rounded-xl font-bold whitespace-nowrap shadow-md shadow-red-500/20 transition-all flex items-center gap-2">🔥 Tüm İndirimler</Link>
+                  <Link href="/urunler?cat=akilli-telefon" className="px-6 py-3 bg-blue-50 text-blue-600 rounded-xl font-bold whitespace-nowrap hover:bg-blue-100 transition-colors flex items-center gap-2">📱 Telefonlar</Link>
+                  <Link href="/urunler?cat=bilgisayar-laptop" className="px-6 py-3 bg-indigo-50 text-indigo-600 rounded-xl font-bold whitespace-nowrap hover:bg-indigo-100 transition-colors flex items-center gap-2">💻 Laptop & PC</Link>
+                  <Link href="/urunler?cat=ev-yasam" className="px-6 py-3 bg-green-50 text-green-600 rounded-xl font-bold whitespace-nowrap hover:bg-green-100 transition-colors flex items-center gap-2">🏠 Ev & Yaşam</Link>
+                  <Link href="/urunler?cat=moda-giyim" className="px-6 py-3 bg-pink-50 text-pink-600 rounded-xl font-bold whitespace-nowrap hover:bg-pink-100 transition-colors flex items-center gap-2">👕 Moda</Link>
+                  <Link href="/urunler?cat=kozmetik" className="px-6 py-3 bg-rose-50 text-rose-600 rounded-xl font-bold whitespace-nowrap hover:bg-rose-100 transition-colors flex items-center gap-2">💄 Kozmetik</Link>
               </div>
           </div>
       </section>
 
-      <section className="py-12">
+      <section className="py-16 bg-gray-50">
           <div className="container mx-auto px-4">
-              <div className="bg-gradient-to-r from-red-500 to-orange-500 rounded-xl p-8 text-white mb-8 border border-red-400">
-                  <div className="flex flex-col md:flex-row items-center justify-between mb-4 gap-4">
-                      <h2 className="text-3xl font-bold">⚡ Flaş Fırsatlar</h2>
-                      <div className="bg-white/20 px-6 py-3 rounded-lg text-center">
-                          <div className="text-2xl font-bold">{countdown}</div>
-                          <div className="text-sm">Kalan Süre</div>
+              <div className="bg-gradient-to-r from-red-600 via-orange-500 to-amber-500 rounded-[2rem] p-8 md:p-12 text-white mb-12 shadow-2xl shadow-orange-500/20 relative overflow-hidden group">
+                  <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full blur-3xl group-hover:scale-150 transition-transform duration-700"></div>
+                  <div className="flex flex-col md:flex-row items-center justify-between mb-2 gap-8 relative z-10">
+                      <div>
+                          <h2 className="text-3xl md:text-5xl font-black tracking-tight mb-4 flex items-center gap-4">⚡ Flaş İndirimler</h2>
+                          <p className="text-white/90 text-lg font-medium">Bu fiyatlar gece yarısında son bulacak! Acele et.</p>
+                      </div>
+                      <div className="bg-white/10 backdrop-blur-md border border-white/20 px-8 py-4 rounded-2xl text-center min-w-[200px]">
+                          <div className="text-3xl font-black tracking-widest"><CountdownTimer /></div>
+                          <div className="text-xs font-bold uppercase tracking-[0.2em] mt-1 text-white/80">Kalan Süre</div>
                       </div>
                   </div>
-                  <p className="text-white/90 text-lg">Sadece bugün geçerli! Hemen kaçırma!</p>
               </div>
 
-              <div className="grid md:grid-cols-4 gap-6">
-                  {flashProducts.map((p, idx) => {
-                      const productForCard = {
-                          ...p,
-                          title: p.name,
-                          image_url: null, // will show placeholder with emoji/icon or I can pass image
-                          brand: 'Fırsat',
-                          rating: 5.0,
-                          reviews_count: 99,
-                          product_prices: [{ price: parseFloat(p.price.replace('.', '')) }]
-                      };
-                      return (
-                        <div key={idx} className="relative">
-                            <div className="absolute top-4 left-4 z-20 bg-red-600 text-white text-[10px] font-black px-3 py-1 rounded-full shadow-lg uppercase tracking-widest animate-pulse">
-                                {p.discount} İNDİRİM
+              {realDeals.length === 0 ? (
+                <div className="text-center py-20 bg-white rounded-3xl border border-slate-100 shadow-sm">
+                  <p className="text-gray-500 font-medium text-lg">Şu an için büyük bir fırsat radara takılmadı. Sistem taramaya devam ediyor...</p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                    {realDeals.map((p: any, idx: number) => (
+                        <div key={p.id} className="relative group">
+                            <div className="absolute top-4 left-4 z-20 bg-red-500 text-white text-[11px] font-black px-4 py-1.5 rounded-full shadow-lg shadow-red-500/30 uppercase tracking-widest flex items-center gap-1 animate-pulse">
+                                %{p.calculatedDiscount} İNDİRİM
                             </div>
-                            <ProductCard product={productForCard} />
+                            <ProductCard product={p} />
                         </div>
-                      );
-                  })}
-              </div>
+                    ))}
+                </div>
+              )}
           </div>
       </section>
 
-      <section className="py-12 bg-white border-t border-slate-100">
+      <section className="py-20 bg-white">
           <div className="container mx-auto px-4">
-              <h2 className="text-3xl font-bold text-gray-800 mb-8">🛍️ Mağaza Kampanyaları</h2>
-              <div className="grid md:grid-cols-2 gap-6">
-                  <div className="border-2 border-orange-500 rounded-xl p-6 hover:shadow-lg transition">
-                      <div className="flex items-center gap-4 mb-4">
-                          <div className="text-5xl">🛍️</div>
+              <h2 className="text-3xl md:text-4xl font-black text-gray-900 mb-12 tracking-tight text-center">🛍️ Mağazalardan Özel Fırsatlar</h2>
+              <div className="grid md:grid-cols-3 gap-8">
+                  {/* Trendyol */}
+                  <div className="bg-white border border-slate-100 rounded-3xl p-8 hover:shadow-2xl hover:shadow-orange-500/10 hover:border-orange-200 transition-all duration-500 group flex flex-col h-full">
+                      <div className="flex items-center gap-6 mb-8">
+                          <div className="w-16 h-16 bg-orange-50 text-orange-500 rounded-2xl flex items-center justify-center text-3xl font-black shadow-sm group-hover:scale-110 transition-transform">TY</div>
                           <div>
-                              <h3 className="text-2xl font-bold text-gray-800">Trendyol</h3>
-                              <p className="text-orange-500 font-semibold">500 TL üzeri ücretsiz kargo</p>
+                              <h3 className="text-2xl font-black text-gray-900 tracking-tight">Trendyol</h3>
+                              <p className="text-orange-500 font-bold text-sm">Ücretsiz Kargo Fırsatı</p>
                           </div>
                       </div>
-                      <ul className="space-y-2 mb-4">
-                          <li className="flex items-start gap-2"><span className="text-green-500">✓</span><span className="text-gray-600">Seçili ürünlerde %70'e varan indirim</span></li>
-                          <li className="flex items-start gap-2"><span className="text-green-500">✓</span><span className="text-gray-600">İlk alışverişe 100 TL indirim kuponu</span></li>
+                      <ul className="space-y-4 mb-8 flex-1">
+                          <li className="flex items-start gap-3"><span className="bg-green-100 text-green-600 w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold mt-0.5">✓</span><span className="text-gray-600 font-medium">Seçili elektronikte %30'a varan indirim</span></li>
+                          <li className="flex items-start gap-3"><span className="bg-green-100 text-green-600 w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold mt-0.5">✓</span><span className="text-gray-600 font-medium">Moda kategorisinde 3 Al 2 Öde</span></li>
                       </ul>
-                      <Link href="/urunler" className="block w-full bg-orange-500 hover:bg-orange-600 text-white text-center py-3 rounded-lg font-semibold transition">
-                          Kampanyalı Ürünleri Gör
+                      <Link href="/urunler" className="block w-full bg-slate-900 hover:bg-orange-500 text-white text-center py-4 rounded-2xl font-black uppercase tracking-widest text-[11px] transition-colors shadow-lg">
+                          Trendyol Ürünleri
                       </Link>
                   </div>
                   
-                  <div className="border-2 border-orange-600 rounded-xl p-6 hover:shadow-lg transition">
-                      <div className="flex items-center gap-4 mb-4">
-                          <div className="text-5xl">🛒</div>
+                  {/* Hepsiburada */}
+                  <div className="bg-white border border-slate-100 rounded-3xl p-8 hover:shadow-2xl hover:shadow-orange-600/10 hover:border-orange-200 transition-all duration-500 group flex flex-col h-full">
+                      <div className="flex items-center gap-6 mb-8">
+                          <div className="w-16 h-16 bg-orange-50 text-orange-600 rounded-2xl flex items-center justify-center text-3xl font-black shadow-sm group-hover:scale-110 transition-transform">HB</div>
                           <div>
-                              <h3 className="text-2xl font-bold text-gray-800">Hepsiburada</h3>
-                              <p className="text-orange-600 font-semibold">150 TL üzeri ücretsiz kargo</p>
+                              <h3 className="text-2xl font-black text-gray-900 tracking-tight">Hepsiburada</h3>
+                              <p className="text-orange-600 font-bold text-sm">Premium Avantajları</p>
                           </div>
                       </div>
-                      <ul className="space-y-2 mb-4">
-                          <li className="flex items-start gap-2"><span className="text-green-500">✓</span><span className="text-gray-600">Elektronik ürünlerde ekstra %15 indirim</span></li>
-                          <li className="flex items-start gap-2"><span className="text-green-500">✓</span><span className="text-gray-600">Hepsiburada Money ile %5 geri ödeme</span></li>
+                      <ul className="space-y-4 mb-8 flex-1">
+                          <li className="flex items-start gap-3"><span className="bg-green-100 text-green-600 w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold mt-0.5">✓</span><span className="text-gray-600 font-medium">Premium üyelere özel ekstra indirimler</span></li>
+                          <li className="flex items-start gap-3"><span className="bg-green-100 text-green-600 w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold mt-0.5">✓</span><span className="text-gray-600 font-medium">Hepsipay ile anında %5 nakit iade</span></li>
                       </ul>
-                      <Link href="/urunler" className="block w-full bg-orange-600 hover:bg-orange-700 text-white text-center py-3 rounded-lg font-semibold transition">
-                          Kampanyalı Ürünleri Gör
+                      <Link href="/urunler" className="block w-full bg-slate-900 hover:bg-orange-600 text-white text-center py-4 rounded-2xl font-black uppercase tracking-widest text-[11px] transition-colors shadow-lg">
+                          Hepsiburada Ürünleri
+                      </Link>
+                  </div>
+
+                  {/* Amazon */}
+                  <div className="bg-white border border-slate-100 rounded-3xl p-8 hover:shadow-2xl hover:shadow-blue-500/10 hover:border-blue-200 transition-all duration-500 group flex flex-col h-full">
+                      <div className="flex items-center gap-6 mb-8">
+                          <div className="w-16 h-16 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center text-3xl font-black shadow-sm group-hover:scale-110 transition-transform">AMZ</div>
+                          <div>
+                              <h3 className="text-2xl font-black text-gray-900 tracking-tight">Amazon Türkiye</h3>
+                              <p className="text-blue-600 font-bold text-sm">Gülümseten Fırsatlar</p>
+                          </div>
+                      </div>
+                      <ul className="space-y-4 mb-8 flex-1">
+                          <li className="flex items-start gap-3"><span className="bg-green-100 text-green-600 w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold mt-0.5">✓</span><span className="text-gray-600 font-medium">Prime üyelerine bedava ve hızlı kargo</span></li>
+                          <li className="flex items-start gap-3"><span className="bg-green-100 text-green-600 w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold mt-0.5">✓</span><span className="text-gray-600 font-medium">Yurt dışı ürünlerde dev indirimler</span></li>
+                      </ul>
+                      <Link href="/urunler" className="block w-full bg-slate-900 hover:bg-blue-600 text-white text-center py-4 rounded-2xl font-black uppercase tracking-widest text-[11px] transition-colors shadow-lg">
+                          Amazon Fırsatları
                       </Link>
                   </div>
               </div>
           </div>
       </section>
       
-      <section className="py-16 gradient-bg">
-          <div className="container mx-auto px-4 text-center text-white">
-              <h2 className="text-3xl font-bold mb-4">📧 Kampanyalardan Haberdar Ol!</h2>
-              <p className="text-xl text-white/90 mb-8">En yeni fırsatları ilk sen öğren</p>
-              <form className="max-w-md mx-auto flex gap-3" onSubmit={(e) => e.preventDefault()}>
-                  <input type="email" placeholder="E-posta adresiniz" className="flex-1 px-6 py-3 rounded-lg text-gray-800 outline-none focus:ring-2 focus:ring-accent" />
-                  <button className="bg-accent hover:bg-accent/90 text-white px-8 py-3 rounded-lg font-semibold transition shadow">Abone Ol</button>
+      <section className="py-24 bg-slate-900 text-center text-white relative overflow-hidden">
+          <div className="absolute inset-0 bg-primary opacity-5 mix-blend-overlay"></div>
+          <div className="container mx-auto px-4 relative z-10">
+              <h2 className="text-3xl md:text-5xl font-black tracking-tight mb-4">📧 Dev İndirimleri Kaçırma!</h2>
+              <p className="text-xl text-white/70 mb-10 max-w-2xl mx-auto font-medium">Günde 1 kez en iyi fiyat düşüşlerini radarımızdan geçirip direkt e-postana gönderiyoruz. Spam yok, sadece fırsat var.</p>
+              <form className="max-w-xl mx-auto flex flex-col sm:flex-row gap-3" onSubmit={(e) => e.preventDefault()}>
+                  <input type="email" placeholder="E-posta adresini yaz..." className="flex-1 px-8 py-4 rounded-2xl text-gray-900 outline-none focus:ring-4 focus:ring-primary/50 font-medium text-lg" />
+                  <button className="bg-primary hover:bg-primary/90 text-white px-10 py-4 rounded-2xl font-black uppercase tracking-widest text-sm transition-all shadow-xl hover:shadow-primary/30 hover:-translate-y-1">Patlat Gelsin 🚀</button>
               </form>
           </div>
       </section>

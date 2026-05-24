@@ -8,7 +8,7 @@ export async function POST(req: Request) {
 
     if (!apiKey || apiKey === 'AIza_PLACEHOLDER_KEY') {
       return NextResponse.json({ 
-        summary: 'Kankam, inceleme özetlerini görmek için bir Gemini API anahtarı gerekiyor! ✨' 
+        summary: 'İnceleme özetleri servisimiz şu anda yapılandırma aşamasındadır. Kısa süre içinde aktif olacaktır. ✨' 
       });
     }
 
@@ -21,18 +21,18 @@ export async function POST(req: Request) {
 
     if (!reviews || reviews.length === 0) {
       return NextResponse.json({ 
-        summary: 'Henüz bu ürün için bir inceleme yapılmamış kankam. İlk yorumu sen yapmaya ne dersin? 😊' 
+        summary: 'Henüz bu ürün için kullanıcı incelemesi bulunmamaktadır. İlk değerlendirmeyi siz yapabilirsiniz! 😊' 
       });
     }
 
     const reviewsText = reviews.map(r => `[Rating: ${r.rating}/5] ${r.comment}`).join('\n');
     
-    const systemPrompt = `Sen Piinti platformunun akıllı analiz motorusun. 
-Sana verilen kullanıcı yorumlarını analiz et ve potansiyel alıcılar için 2-3 cümlelik bir özet hazırla.
+    const systemPrompt = `Sen Piinti platformunun profesyonel analiz motorusun. 
+Sana verilen kullanıcı yorumlarını analiz et ve potansiyel alıcılar için 2-3 cümlelik kısa ve net bir özet hazırla.
 Özetinde mutlaka "Artılar" ve "Eksiler" şeklinde bir ayrım yapmaya çalış.
-Dilin samimi ve bilgilendirici olsun (Örn: "Kankalar bu ürünün bataryası efsane ama kamerası gece biraz üzebilir").`;
+Dilin profesyonel ve bilgilendirici olsun. Kullanıcıya hitap ederken "Siz" diye hitap et.`;
 
-    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
+    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -52,7 +52,7 @@ Dilin samimi ve bilgilendirici olsun (Örn: "Kankalar bu ürünün bataryası ef
     });
 
     const data = await response.json();
-    const summary = data.candidates?.[0]?.content?.parts?.[0]?.text || "İncelemeleri şu an özetleyemiyorum kankam.";
+    const summary = data.candidates?.[0]?.content?.parts?.[0]?.text || "İnceleme özetleri şu anda hazırlanamıyor. Lütfen daha sonra tekrar deneyiniz.";
 
     return NextResponse.json({ summary });
 
