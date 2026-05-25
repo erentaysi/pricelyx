@@ -197,27 +197,7 @@ export default async function UrunDetay({ params }: { params: { id: string } }) 
                </div>
             </div>
             
-            <div className="grid grid-cols-4 gap-4 mt-6">
-               {[1,2,3,4].map(idx => (
-                 <div key={idx} className="bg-white border border-slate-100 aspect-square rounded-2xl flex items-center justify-center cursor-pointer hover:border-primary/50 transition-all opacity-40 hover:opacity-100 overflow-hidden p-3 shadow-sm">
-                   {(!product.image_url || !(product.image_url?.startsWith('http') || product.image_url?.includes('data:image'))) ? (
-                      <div className="relative w-full h-full opacity-40 mix-blend-multiply">
-                        <Image src="/placeholder.png" alt="Görsel Bekleniyor" fill className="object-contain p-2" />
-                      </div>
-                   ) : (
-                      <div className="relative w-full h-full">
-                        <Image 
-                          src={product.image_url.replace('http://', 'https://')} 
-                          alt={`${product.title} Thumbnail - Piinti`}
-                          fill
-                          sizes="100px"
-                          className="object-contain" 
-                        />
-                      </div>
-                    )}
-                 </div>
-               ))}
-            </div>
+
           </div>
 
           {/* Details Column */}
