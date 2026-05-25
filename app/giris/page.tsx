@@ -1,12 +1,73 @@
-import { login, signup } from './actions';
-import { Mail, Lock, User, ShieldCheck } from 'lucide-react';
+"use client";
+
+import { useState } from 'react';
+import { Mail, Lock, User, ShieldCheck, Loader2 } from 'lucide-react';
 import Link from 'next/link';
+import { createClient } from '@/lib/supabase/client';
+import { useRouter } from 'next/navigation';
 
-export const metadata = {
-    title: 'Giriş Yap - Piinti v2',
-};
+export default function LoginPage() {
+  const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [message, setMessage] = useState({ text: '', type: '' });
+  const router = useRouter();
+  const supabase = createClient();
 
-export default function LoginPage({ searchParams }: { searchParams: { message: string } }) {
+  const handleSignup = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    setMessage({ text: '', type: '' });
+
+    if (!email || !password || !name) {
+      setMessage({ text: 'Lütfen tüm alanları doldurunuz.', type: 'error' });
+      setLoading(false);
+      return;
+    }
+
+    const { data, error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        data: { full_name: name }
+      }
+    });
+
+    if (error) {
+      setMessage({ text: 'Kayıt başarısız: ' + error.message, type: 'error' });
+    } else {
+      setMessage({ text: 'Kayıt Başarılı! Lütfen e-postanızı kontrol edin.', type: 'success' });
+    }
+    setLoading(false);
+  };
+
+  const handleLogin = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    setMessage({ text: '', type: '' });
+
+    if (!email || !password) {
+      setMessage({ text: 'Lütfen e-posta ve şifrenizi giriniz.', type: 'error' });
+      setLoading(false);
+      return;
+    }
+
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email,
+      password
+    });
+
+    if (error) {
+      setMessage({ text: 'Giriş başarısız: E-posta veya şifre hatalı.', type: 'error' });
+      setLoading(false);
+    } else {
+      setMessage({ text: 'Giriş Başarılı! Yönlendiriliyorsunuz...', type: 'success' });
+      router.push('/profil');
+      router.refresh();
+    }
+  };
+
   return (
     <div className="min-h-screen pt-24 pb-12 px-4 flex flex-col items-center justify-center relative overflow-hidden bg-white">
       {/* Dynamic Background Elements */}
@@ -24,9 +85,9 @@ export default function LoginPage({ searchParams }: { searchParams: { message: s
             <p className="text-slate-500 text-sm mt-2 font-medium">Favorilerini kaydet, fiyat düşünce ilk sen öğren!</p>
         </div>
 
-        {searchParams?.message && (
-          <div className="mb-6 p-4 bg-rose-50 border-l-4 border-rose-500 text-rose-600 rounded-r-xl text-sm font-bold flex items-center shadow-sm">
-            {searchParams.message}
+        {message.text && (
+          <div className={`mb-6 p-4 border-l-4 rounded-r-xl text-sm font-bold flex items-center shadow-sm ${message.type === 'error' ? 'bg-rose-50 border-rose-500 text-rose-600' : 'bg-emerald-50 border-emerald-500 text-emerald-600'}`}>
+            {message.text}
           </div>
         )}
 
@@ -38,6 +99,8 @@ export default function LoginPage({ searchParams }: { searchParams: { message: s
                 <input
                     id="name"
                     name="name"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
                     placeholder="Adınız Soyadınız"
                     className="w-full pl-12 pr-4 py-3.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 transition-all font-medium text-slate-700"
                 />
@@ -52,6 +115,8 @@ export default function LoginPage({ searchParams }: { searchParams: { message: s
                     id="email"
                     name="email"
                     type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
                     placeholder="ornek@mail.com"
                     required
                     className="w-full pl-12 pr-4 py-3.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 transition-all font-medium text-slate-700"
@@ -67,6 +132,8 @@ export default function LoginPage({ searchParams }: { searchParams: { message: s
                     id="password"
                     name="password"
                     type="password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
                     placeholder="••••••••"
                     required
                     className="w-full pl-12 pr-4 py-3.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 transition-all font-medium text-slate-700"
@@ -76,16 +143,18 @@ export default function LoginPage({ searchParams }: { searchParams: { message: s
 
           <div className="flex gap-4 mt-4">
              <button
-                 formAction={login}
-                 className="flex-1 bg-slate-900 hover:bg-slate-800 text-white font-bold py-4 rounded-xl transition-all shadow-lg active:scale-95 shadow-slate-900/10"
+                 onClick={handleLogin}
+                 disabled={loading}
+                 className="flex-1 flex justify-center items-center bg-slate-900 hover:bg-slate-800 text-white font-bold py-4 rounded-xl transition-all shadow-lg active:scale-95 shadow-slate-900/10 disabled:opacity-50"
              >
-                 Giriş Yap
+                 {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Giriş Yap'}
              </button>
              <button
-                 formAction={signup}
-                 className="flex-1 bg-gradient-to-r from-teal-500 to-teal-400 hover:from-teal-600 hover:to-teal-500 text-white font-bold py-4 rounded-xl transition-all shadow-lg shadow-teal-500/20 active:scale-95"
+                 onClick={handleSignup}
+                 disabled={loading}
+                 className="flex-1 flex justify-center items-center bg-gradient-to-r from-teal-500 to-teal-400 hover:from-teal-600 hover:to-teal-500 text-white font-bold py-4 rounded-xl transition-all shadow-lg shadow-teal-500/20 active:scale-95 disabled:opacity-50"
              >
-                 Kayıt Ol
+                 {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Kayıt Ol'}
              </button>
           </div>
         </form>
