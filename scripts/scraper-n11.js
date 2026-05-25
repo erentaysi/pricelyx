@@ -148,7 +148,6 @@ async function scrapeN11() {
                 rating: 4.7,
                 reviews_count: Math.floor(Math.random() * 600) + 80,
                 is_trend: true,
-                description: `${cleanTitle} en uygun fiyat ve Piinti güvencesiyle. Tüm mağazaları karşılaştır, en ucuzunu bul!`,
                 specs: mockSpecs
             }).select().single();
             if(nProd) pId = nProd.id;

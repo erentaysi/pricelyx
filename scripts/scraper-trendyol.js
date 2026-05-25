@@ -149,7 +149,6 @@ async function scrapeTrendyol() {
                 rating: 4.8,
                 reviews_count: Math.floor(Math.random() * 500) + 50,
                 is_trend: true,
-                description: `${cleanTitle} en uygun fiyat ve Piinti güvencesiyle burada. Fiyat değişimlerini takip et, en ucuza al!`,
                 specs: mockSpecs
             }).select().single();
             if(nProd) pId = nProd.id;

@@ -137,7 +137,6 @@ async function scrapeHepsiburada() {
                 rating: 4.9,
                 reviews_count: Math.floor(Math.random() * 800) + 120,
                 is_trend: true,
-                description: `${cleanTitle} pazar yerlerindeki en iyi fiyatlarla Piinti radarında. Karşılaştır, tasarruf et!`,
                 specs: mockSpecs
             }).select().single();
             if(nProd) pId = nProd.id;

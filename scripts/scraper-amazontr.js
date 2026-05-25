@@ -136,7 +136,6 @@ async function scrapeAmazon() {
                 rating: p.rating,
                 reviews_count: Math.floor(Math.random() * 500) + 1500,
                 is_trend: true,
-                description: `${cleanTitle} Amazon güvencesi ve Piinti fiyat avantajıyla senin olabilir. Kaçırma!`,
                 specs: mockSpecs
             }).select().single();
             if(nProd) pId = nProd.id;
