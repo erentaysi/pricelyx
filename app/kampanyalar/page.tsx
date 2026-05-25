@@ -162,9 +162,9 @@ export default async function Kampanyalar() {
           <div className="container mx-auto px-4 relative z-10">
               <h2 className="text-3xl md:text-5xl font-black tracking-tight mb-4">📧 Dev İndirimleri Kaçırma!</h2>
               <p className="text-xl text-white/70 mb-10 max-w-2xl mx-auto font-medium">Günde 1 kez en iyi fiyat düşüşlerini radarımızdan geçirip direkt e-postana gönderiyoruz. Spam yok, sadece fırsat var.</p>
-              <form className="max-w-xl mx-auto flex flex-col sm:flex-row gap-3" onSubmit={(e) => e.preventDefault()}>
+              <form className="max-w-xl mx-auto flex flex-col sm:flex-row gap-3" action="#">
                   <input type="email" placeholder="E-posta adresini yaz..." className="flex-1 px-8 py-4 rounded-2xl text-gray-900 outline-none focus:ring-4 focus:ring-primary/50 font-medium text-lg" />
-                  <button className="bg-primary hover:bg-primary/90 text-white px-10 py-4 rounded-2xl font-black uppercase tracking-widest text-sm transition-all shadow-xl hover:shadow-primary/30 hover:-translate-y-1">Patlat Gelsin 🚀</button>
+                  <button type="button" className="bg-primary hover:bg-primary/90 text-white px-10 py-4 rounded-2xl font-black uppercase tracking-widest text-sm transition-all shadow-xl hover:shadow-primary/30 hover:-translate-y-1">Patlat Gelsin 🚀</button>
               </form>
           </div>
       </section>
