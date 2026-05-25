@@ -70,7 +70,7 @@ async function scrapeAmazon() {
                                 brand: brand,
                                 price: priceNum,
                                 image: imgUrl,
-                                url: link.split('?')[0],
+                                url: link.split('/ref=')[0],
                                 rating: Math.random() > 0.3 ? 4.9 : 4.4
                             });
                         }
