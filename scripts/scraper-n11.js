@@ -56,75 +56,35 @@ async function scrapeN11() {
             const products = await page.evaluate(() => {
                 const results = [];
                 
-                // N11 product cards - try multiple selectors
-                const cards = document.querySelectorAll('.columnContent .pro, .resultList li, [data-id]');
+                // N11 product cards - strict selectors
+                const cards = document.querySelectorAll('.columnContent .pro, .resultList li.column');
                 
-                if (cards.length > 0) {
-                    cards.forEach((card, i) => {
-                        if (results.length >= 20) return;
+                cards.forEach(card => {
+                    if (results.length >= 20) return;
+                    
+                    const aTag = card.querySelector('a');
+                    const imgTag = card.querySelector('img');
+                    const titleEl = card.querySelector('.proName, .productName, h3');
+                    const priceEl = card.querySelector('.newPrice ins, .newPrice');
+                    
+                    if (aTag && priceEl) {
+                        const title = titleEl ? titleEl.innerText.trim() : (imgTag ? imgTag.alt : '');
                         
-                        const aTag = card.querySelector('a');
-                        const imgTag = card.querySelector('img');
-                        const titleEl = card.querySelector('.proName, .productName, h3');
-                        const priceEl = card.querySelector('.newPrice ins, .price ins, .newPrice, .price');
+                        // Price parsing: Remove TL, spaces, dots (thousands separator), replace comma with dot
+                        const rawPrice = priceEl.innerText.split('TL')[0].trim();
+                        const priceNum = parseFloat(rawPrice.replace(/\./g, '').replace(',', '.'));
                         
-                        if (aTag && priceEl) {
-                            const title = titleEl ? titleEl.innerText.trim() : (imgTag ? imgTag.alt : '');
-                            const priceText = priceEl.innerText.replace(/[^0-9,]/g, '').replace(',', '.');
-                            const priceNum = parseFloat(priceText);
-                            
-                            if (title && !isNaN(priceNum) && priceNum > 0) {
-                                results.push({
-                                    title: title.substring(0, 150),
-                                    brand: title.split(' ')[0] || 'Diğer',
-                                    price: priceNum,
-                                    image: imgTag ? (imgTag.src || imgTag.getAttribute('data-src') || imgTag.getAttribute('data-original')) : '',
-                                    url: aTag.href
-                                });
-                            }
+                        if (title && !isNaN(priceNum) && priceNum > 0) {
+                            results.push({
+                                title: title.substring(0, 150),
+                                brand: title.split(' ')[0] || 'Diğer',
+                                price: priceNum,
+                                image: imgTag ? (imgTag.src || imgTag.getAttribute('data-src') || imgTag.getAttribute('data-original') || '') : '',
+                                url: aTag.href
+                            });
                         }
-                    });
-                }
-
-                // Fallback: Generic price-based extraction
-                if (results.length === 0) {
-                    const allElements = Array.from(document.querySelectorAll('*'));
-                    const priceElements = allElements.filter(el => {
-                        const text = el.innerText || '';
-                        return (text.includes('₺') || text.includes('TL')) && text.length < 20 && /[0-9]/.test(text);
-                    });
-
-                    priceElements.forEach((priceEl) => {
-                        if (results.length >= 20) return;
-
-                        let container = priceEl.parentElement;
-                        while (container && container.tagName !== 'BODY' && container.offsetHeight < 100) {
-                            container = container.parentElement;
-                        }
-
-                        if (container && !results.some(r => r.id === container.innerText.substring(0, 10))) {
-                            const aTag = container.querySelector('a') || (container.tagName === 'A' ? container : null);
-                            const imgTag = container.querySelector('img');
-                            const textContent = container.innerText.split('\n').filter(t => t.trim().length > 3);
-                            
-                            if (aTag && textContent.length >= 2) {
-                                const priceText = priceEl.innerText.replace(/[^0-9,]/g, '').replace(',', '.');
-                                const priceNum = parseFloat(priceText);
-
-                                if (!isNaN(priceNum) && priceNum > 0) {
-                                    results.push({
-                                        id: container.innerText.substring(0, 10),
-                                        title: textContent[0] + ' ' + (textContent[1] || ''),
-                                        brand: textContent[0],
-                                        price: priceNum,
-                                        image: imgTag ? (imgTag.src || imgTag.getAttribute('data-src')) : '',
-                                        url: aTag.href
-                                    });
-                                }
-                            }
-                        }
-                    });
-                }
+                    }
+                });
                 
                 return results;
             });

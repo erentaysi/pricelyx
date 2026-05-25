@@ -44,44 +44,47 @@ async function scrapeTrendyol() {
 
             // Extract data from the DOM with extra-resilient logic
             const products = await page.evaluate(() => {
-                // Find anything that looks like a product card
                 const results = [];
+                const cards = document.querySelectorAll('.p-card-wrppr, .p-card-chldrn-cntnr');
                 
-                // Strategy: Find price elements first, then climb up to the container
-                const allElements = Array.from(document.querySelectorAll('*'));
-                const priceElements = allElements.filter(el => {
-                    const text = el.innerText || '';
-                    return (text.includes('₺') || text.includes('TL')) && text.length < 20 && /[0-9]/.test(text);
-                });
-
-                priceElements.forEach((priceEl, i) => {
+                cards.forEach(card => {
                     if (results.length >= 25) return;
 
-                    // Climp up to find a container (usually a div or anchor)
-                    let container = priceEl.parentElement;
-                    while (container && container.tagName !== 'BODY' && container.offsetHeight < 100) {
-                        container = container.parentElement;
-                    }
+                    const aTag = card.querySelector('a') || (card.tagName === 'A' ? card : null);
+                    const imgTag = card.querySelector('img');
+                    
+                    // Specific Trendyol title and price classes
+                    const brandEl = card.querySelector('.prdct-desc-cntnr-ttl');
+                    const nameEl = card.querySelector('.prdct-desc-cntnr-name');
+                    const priceEl = card.querySelector('.prc-box-dscntd') || card.querySelector('.prc-box-sllng');
 
-                    if (container && !results.some(r => r.id === container.innerText.substring(0, 10))) {
-                        const aTag = container.querySelector('a') || (container.tagName === 'A' ? container : null);
-                        const imgTag = container.querySelector('img');
-                        const textContent = container.innerText.split('\n').filter(t => t.trim().length > 3);
+                    if (aTag && priceEl && nameEl) {
+                        const brandText = brandEl ? brandEl.innerText.trim() : '';
+                        const nameText = nameEl.innerText.trim();
+                        const titleText = `${brandText} ${nameText}`.trim();
                         
-                        if (aTag && textContent.length >= 2) {
-                            const priceText = priceEl.innerText.replace(/[^0-9,]/g, '').replace(',', '.');
-                            const priceNum = parseFloat(priceText);
+                        // Price parsing: Remove TL, spaces, dots (thousands separator), replace comma with dot
+                        const rawPrice = priceEl.innerText.split('TL')[0].trim();
+                        const priceNum = parseFloat(rawPrice.replace(/\./g, '').replace(',', '.'));
 
-                            if (!isNaN(priceNum) && priceNum > 0) {
-                                results.push({
-                                    id: container.innerText.substring(0, 10), // temporary ID for de-duplication
-                                    title: textContent[0] + ' ' + (textContent[1] || ''),
-                                    brand: textContent[0],
-                                    price: priceNum,
-                                    image: imgTag ? (imgTag.src || imgTag.getAttribute('data-src')) : '',
-                                    url: aTag.href
-                                });
+                        if (!isNaN(priceNum) && priceNum > 0) {
+                            let linkUrl = aTag.href;
+                            // Clean up Trendyol boutique tracking params if needed, but keep product variant params
+                            if (linkUrl.includes('?')) {
+                                const urlObj = new URL(linkUrl);
+                                urlObj.searchParams.delete('boutiqueId');
+                                urlObj.searchParams.delete('merchantId');
+                                linkUrl = urlObj.toString();
                             }
+
+                            results.push({
+                                id: titleText.substring(0, 10),
+                                title: titleText,
+                                brand: brandText || titleText.split(' ')[0],
+                                price: priceNum,
+                                image: imgTag ? (imgTag.src || imgTag.getAttribute('data-src') || '') : '',
+                                url: linkUrl
+                            });
                         }
                     }
                 });
