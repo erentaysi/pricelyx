@@ -21,9 +21,9 @@ Kullanıcılara karşı nazik, profesyonel ve kurumsal bir dille hitap edersiniz
 Analizlerinizde nesnel, yardımcı ve güvenilir bir profil çizmelisiniz.
 Eğer fiyat analizi istenirse, Piinti'nin n8n ve Apify kullanarak pazar yerlerini anlık taradığını ve en güncel verileri sunduğunu belirtin.`;
 
-    const modelName = 'gemini-2.0-flash';
+    const modelName = 'gemini-1.5-flash';
     
-    try {
+    const callGemini = async (retryCount = 0): Promise<any> => {
       const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -35,6 +35,17 @@ Eğer fiyat analizi istenirse, Piinti'nin n8n ve Apify kullanarak pazar yerlerin
           generationConfig: { temperature: 0.7, maxOutputTokens: 1024 }
         })
       });
+
+      if (response.status === 429 && retryCount < 1) {
+        console.warn('Rate limited (429). Retrying in 5 seconds...');
+        await new Promise(resolve => setTimeout(resolve, 5000));
+        return callGemini(retryCount + 1);
+      }
+      return response;
+    };
+    
+    try {
+      const response = await callGemini();
 
       if (!response.ok) {
         console.error('Gemini API HTTP Error:', response.status, response.statusText);

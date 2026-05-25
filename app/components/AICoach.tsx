@@ -29,6 +29,17 @@ export default function AICoach() {
     }
   }, [messages]);
 
+  // Debounce: Yazmayı bıraktıktan 1 saniye sonra otomatik gönder
+  useEffect(() => {
+    if (!input.trim() || isLoading) return;
+    
+    const timer = setTimeout(() => {
+      handleSend();
+    }, 1000);
+
+    return () => clearTimeout(timer);
+  }, [input]);
+
   const handleSend = async () => {
     if (!input.trim() || isLoading) return;
 
