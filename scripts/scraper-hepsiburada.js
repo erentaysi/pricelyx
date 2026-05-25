@@ -44,48 +44,39 @@ async function scrapeHepsiburada() {
             await page.waitForSelector('[data-test-id="product-card-container"], .productListContent-item', { timeout: 15000 })
                 .catch(() => console.log('Products missing for ' + query));
 
-            // Extract data from the DOM with extra-resilient logic
             const products = await page.evaluate(() => {
                 const results = [];
                 
-                // Strategy: Find price elements first, then climb up to the container
-                const allElements = Array.from(document.querySelectorAll('*'));
-                const priceElements = allElements.filter(el => {
-                    const text = el.innerText || '';
-                    return (text.includes('₺') || text.includes('TL')) && text.length < 20 && /[0-9]/.test(text);
-                });
-
-                priceElements.forEach((priceEl, i) => {
+                const cards = document.querySelectorAll('[data-test-id="product-card-container"], .productListContent-item');
+                
+                cards.forEach(card => {
                     if (results.length >= 25) return;
 
-                    // Climp up to find a container (usually a div, li or anchor)
-                    let container = priceEl.parentElement;
-                    while (container && container.tagName !== 'BODY' && container.offsetHeight < 100) {
-                        container = container.parentElement;
-                    }
+                    const titleEl = card.querySelector('[data-test-id="product-card-name"]') || card.querySelector('h3');
+                    // Explicitly target the main price, avoid installment text
+                    const priceEl = card.querySelector('[data-test-id="price-current-price"]') || card.querySelector('div[data-test-id="price-current-price"]') || card.querySelector('.price-value');
+                    const imgEl = card.querySelector('img');
+                    const linkEl = card.querySelector('a');
 
-                    if (container && !results.some(r => r.id === container.innerText.substring(0, 10))) {
-                        const aTag = container.querySelector('a') || (container.tagName === 'A' ? container : null);
-                        const imgTag = container.querySelector('img');
-                        const textContent = container.innerText.split('\n').filter(t => t.trim().length > 3);
-                        
-                        if (aTag && textContent.length >= 2) {
-                            const priceText = priceEl.innerText.replace(/[^0-9,]/g, '').replace(',', '.');
-                            const priceNum = parseFloat(priceText);
+                    if (titleEl && priceEl && linkEl) {
+                        const titleText = titleEl.innerText.trim();
+                        // Extract only the numbers from the main price container
+                        const priceText = priceEl.innerText.split('TL')[0].replace(/[^0-9,]/g, '').replace(',', '.');
+                        const priceNum = parseFloat(priceText);
 
-                            if (!isNaN(priceNum) && priceNum > 0) {
-                                results.push({
-                                    id: container.innerText.substring(0, 10), // temporary ID for de-duplication
-                                    title: textContent[0] + ' ' + (textContent[1] || ''),
-                                    brand: textContent[0],
-                                    price: priceNum,
-                                    image: imgTag ? (imgTag.src || imgTag.getAttribute('data-src')) : '',
-                                    url: aTag.href
-                                });
-                            }
+                        if (!isNaN(priceNum) && priceNum > 0) {
+                            results.push({
+                                id: titleText.substring(0, 10),
+                                title: titleText,
+                                brand: titleText.split(' ')[0],
+                                price: priceNum,
+                                image: imgEl ? (imgEl.src || imgEl.getAttribute('data-src')) : '',
+                                url: linkEl.href
+                            });
                         }
                     }
                 });
+                
                 return results;
             });
             
