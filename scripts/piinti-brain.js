@@ -178,14 +178,14 @@ async function startNeuralNetwork() {
         log('--- RUTİN AV DÖNGÜSÜ TAMAMLANDI ---', 'info');
     };
 
-    // Zamanlayıcı (Cron) - Her sabah 09:00 ve akşam 21:00'da çalışır
+    // Zamanlayıcı (Cron) - Her 6 saatte bir çalışır (00:00, 06:00, 12:00, 18:00)
     // format: 'dakika saat gün ay haftanıngünü'
-    cron.schedule('0 9,21 * * *', () => {
-        log('Zamanlanmış operasyon tetiklendi (CRON).', 'warn');
+    cron.schedule('0 */6 * * *', () => {
+        log('Zamanlanmış operasyon tetiklendi (CRON - 6 saatlik döngü).', 'warn');
         runSequence();
     });
 
-    log('Kritik saatler (09:00 ve 21:00) bekleniyor. Manuel test için tetikleniyor...', 'info');
+    log('6 saatlik döngü aktif (00:00, 06:00, 12:00, 18:00). İlk tarama başlatılıyor...', 'info');
     // Kurulum sonrası çalıştığını görmek için script başlar başlamaz 1 kez manuel tarama yapar:
     runSequence();
 }

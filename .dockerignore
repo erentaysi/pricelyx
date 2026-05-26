@@ -1,0 +1,17 @@
+node_modules
+.next
+.git
+.env.local
+.env
+*.zip
+brain
+piinti_en_son_guncel
+data
+public
+app
+lib
+middleware.ts
+next.config.mjs
+postcss.config.js
+tailwind.config.ts
+tsconfig.json
