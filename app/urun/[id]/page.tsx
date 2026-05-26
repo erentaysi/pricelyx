@@ -364,13 +364,13 @@ export default async function UrunDetay({ params }: { params: { id: string } }) 
                   <div className="w-20 h-20 bg-white/10 backdrop-blur rounded-[2rem] flex items-center justify-center text-primary border border-white/10 mx-auto mb-8 shadow-2xl group-hover:scale-110 transition-transform duration-500">
                     <ShieldCheck className="w-10 h-10" />
                   </div>
-                  <h2 className="text-2xl font-bold mb-4 tracking-tight uppercase">Veri Güvenliği Hazır</h2>
-                  <div className="text-5xl font-black bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent mb-6 tracking-tighter">SUCCESS</div>
+                  <h2 className="text-2xl font-bold mb-4 tracking-tight uppercase">Piinti Güvencesi</h2>
+                  <div className="text-5xl font-black bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent mb-6 tracking-tighter">DOĞRULANMIŞ</div>
                   <p className="text-slate-400 font-bold text-xs uppercase tracking-[0.2em] leading-loose">
                     Piinti Analytics Motoru<br />
-                    Tüm verileri anlık olarak<br />
-                    <span className="text-white border-b-2 border-primary">Supabase Bulutu</span><br />
-                    üzerinden doğrular.
+                    Tüm fiyatları anlık olarak<br />
+                    <span className="text-white border-b-2 border-primary">orijinal mağazalardan</span><br />
+                    doğrular ve günceller.
                   </p>
                 </div>
              </section>
