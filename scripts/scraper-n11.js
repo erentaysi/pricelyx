@@ -21,7 +21,12 @@ async function scrapeN11() {
     await page.setViewport({ width: 1920, height: 1080 });
     await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36');
 
-    const searchQueries = ['iphone', 'dyson', 'robot süpürge', 'kulaklık', 'airfryer', 'laptop'];
+    const searchQueries = [
+        'iphone', 'dyson', 'robot süpürge', 'kulaklık', 
+        'macbook', 'airpods', 'playstation', 'airfryer', 
+        'kahve makinesi', 'parfüm', 'tıraş makinesi', 
+        'samsung galaxy', 'akıllı saat'
+    ];
     let allProducts = [];
 
     const vendorName = 'n11';
@@ -123,10 +128,11 @@ async function scrapeN11() {
 
         let catSlug = 'elektronik';
         const t = cleanTitle.toLowerCase();
-        if((t.includes('telefon') || t.includes('iphone')) && !t.includes('kulaklık') && !t.includes('kılıf')) catSlug = 'akilli-telefon';
-        else if(t.includes('süpürge') || t.includes('airfryer') || t.includes('dyson') || t.includes('robot')) catSlug = 'ev-yasam';
-        else if(t.includes('kulaklık') || t.includes('airpods') || t.includes('bluetooth') || t.includes('buds')) catSlug = 'elektronik';
-        else if(t.includes('laptop') || t.includes('bilgisayar') || t.includes('oyuncu') || t.includes('notebook')) catSlug = 'bilgisayar-laptop';
+        if((t.includes('telefon') || t.includes('iphone') || t.includes('samsung galaxy') || t.includes('poco') || t.includes('xiaomi')) && !t.includes('kılıf')) catSlug = 'akilli-telefon';
+        else if(t.includes('süpürge') || t.includes('airfryer') || t.includes('dyson') || t.includes('robot') || t.includes('kahve makinesi') || t.includes('çay makinesi')) catSlug = 'ev-yasam';
+        else if(t.includes('kulaklık') || t.includes('airpods') || t.includes('bluetooth') || t.includes('buds') || t.includes('playstation') || t.includes('akıllı saat')) catSlug = 'elektronik';
+        else if(t.includes('laptop') || t.includes('bilgisayar') || t.includes('macbook') || t.includes('oyuncu')) catSlug = 'bilgisayar-laptop';
+        else if(t.includes('parfüm') || t.includes('tıraş') || t.includes('epilasyon') || t.includes('kurutma')) catSlug = 'kozmetik-kisisel-bakim';
 
         let catObj = categories.find(c => c.slug === catSlug);
 

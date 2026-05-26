@@ -22,7 +22,12 @@ async function scrapeTrendyol() {
     const page = await browser.newPage();
     await page.setViewport({ width: 1920, height: 1080 });
 
-    const searchQueries = ['iphone', 'dyson', 'robot süpürge', 'kulaklık', 'airfryer', 'oyuncu bilgisayarı'];
+    const searchQueries = [
+        'iphone', 'dyson', 'robot süpürge', 'kulaklık', 
+        'macbook', 'airpods', 'playstation', 'airfryer', 
+        'kahve makinesi', 'parfüm', 'tıraş makinesi', 
+        'samsung galaxy', 'akıllı saat'
+    ];
     let allProducts = [];
 
     const vendorName = 'Trendyol';
@@ -125,10 +130,11 @@ async function scrapeTrendyol() {
 
         let catSlug = 'elektronik';
         const t = cleanTitle.toLowerCase();
-        if((t.includes('telefon') || t.includes('iphone')) && !t.includes('kulaklık') && !t.includes('kılıf')) catSlug = 'akilli-telefon';
-        else if(t.includes('süpürge') || t.includes('airfryer') || t.includes('dyson') || t.includes('robot')) catSlug = 'ev-yasam';
-        else if(t.includes('kulaklık') || t.includes('airpods') || t.includes('bluetooth')) catSlug = 'elektronik';
-        else if(t.includes('laptop') || t.includes('bilgisayar') || t.includes('oyuncu')) catSlug = 'bilgisayar-laptop';
+        if((t.includes('telefon') || t.includes('iphone') || t.includes('samsung galaxy') || t.includes('poco') || t.includes('xiaomi')) && !t.includes('kılıf')) catSlug = 'akilli-telefon';
+        else if(t.includes('süpürge') || t.includes('airfryer') || t.includes('dyson') || t.includes('robot') || t.includes('kahve makinesi') || t.includes('çay makinesi')) catSlug = 'ev-yasam';
+        else if(t.includes('kulaklık') || t.includes('airpods') || t.includes('bluetooth') || t.includes('buds') || t.includes('playstation') || t.includes('akıllı saat')) catSlug = 'elektronik';
+        else if(t.includes('laptop') || t.includes('bilgisayar') || t.includes('macbook') || t.includes('oyuncu')) catSlug = 'bilgisayar-laptop';
+        else if(t.includes('parfüm') || t.includes('tıraş') || t.includes('epilasyon') || t.includes('kurutma')) catSlug = 'kozmetik-kisisel-bakim';
 
         let catObj = categories.find(c => c.slug === catSlug);
 
