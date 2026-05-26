@@ -1,0 +1,4 @@
+# Force LF line endings for Docker and shell files
+Dockerfile text eol=lf
+.dockerignore text eol=lf
+scripts/*.js text eol=lf
