@@ -54,16 +54,19 @@ Eğer veritabanımızdan ürün bilgisi gelirse, bu ürünleri fiyatları ve lin
     const modelName = 'gemini-1.5-flash';
     
     const callGemini = async (retryCount = 0): Promise<any> => {
+      const payload = {
+        contents: [{
+          role: "user",
+          parts: [{ text: systemPrompt + dbContext + "\n\nKullanıcı: " + lastMessage }]
+        }],
+        generationConfig: { temperature: 0.7, maxOutputTokens: 1024 }
+      };
+      // console.log("Gemini Payload:", JSON.stringify(payload, null, 2));
+      
       const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          contents: [{
-            role: "user",
-            parts: [{ text: systemPrompt + dbContext + "\n\nKullanıcı: " + lastMessage }]
-          }],
-          generationConfig: { temperature: 0.7, maxOutputTokens: 1024 }
-        })
+        body: JSON.stringify(payload)
       });
 
       if (response.status === 429 && retryCount < 1) {
@@ -77,24 +80,20 @@ Eğer veritabanımızdan ürün bilgisi gelirse, bu ürünleri fiyatları ve lin
     try {
       const response = await callGemini();
 
-      if (!response.ok) {
-        console.error('Gemini API HTTP Error:', response.status, response.statusText);
-        return NextResponse.json({ 
-          role: 'bot', 
-          text: `Yapay zeka servisine bağlanırken bir sorun oluştu (HTTP ${response.status}). Lütfen birkaç dakika sonra tekrar deneyiniz.` 
-        });
+      let data;
+      try {
+        data = await response.json();
+      } catch (e) {
+        data = { error: { message: await response.text() } };
       }
 
-      const data = await response.json();
-      
-      if (data.error) {
-        console.error('Gemini API Error:', JSON.stringify(data.error, null, 2));
-        
-        const errCode = data.error.code || 'Bilinmiyor';
-        const errMsg = data.error.message || 'Detay yok';
+      if (!response.ok || data.error) {
+        const errCode = data.error?.code || response.status || 'Bilinmiyor';
+        const errMsg = data.error?.message || response.statusText || 'Detay yok';
+        console.error(`Gemini API Error (${errCode}):`, errMsg);
         
         let friendlyMsg = `Şu anda AI motorumuzda geçici bir sorun yaşanmaktadır. (Kod: ${errCode}). Lütfen kısa bir süre sonra tekrar deneyiniz.`;
-        if (errMsg.includes('API key') || errMsg.includes('API_KEY_INVALID')) friendlyMsg = "API anahtarı yapılandırmasında bir sorun tespit edildi. Sistem yöneticisi bilgilendirildi.";
+        if (errMsg.includes('API key') || errMsg.includes('API_KEY_INVALID')) friendlyMsg = "Gemini API anahtarının (GEMINI_API_KEY) süresi dolmuş veya geçersiz. Lütfen yeni bir API anahtarı alıp Vercel'e ekleyin.";
         if (errMsg.includes('quota') || errMsg.includes('RESOURCE_EXHAUSTED')) friendlyMsg = "Yapay zeka servisinin kullanım limiti geçici olarak dolmuştur. Kısa süre içinde tekrar aktif olacaktır.";
         if (errMsg.includes('not found') || errMsg.includes('NOT_FOUND')) friendlyMsg = "İstenen AI modeli bulunamadı. Sistem otomatik olarak güncelleniyor.";
         
