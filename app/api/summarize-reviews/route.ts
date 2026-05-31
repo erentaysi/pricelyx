@@ -32,27 +32,27 @@ Sana verilen kullanıcı yorumlarını analiz et ve potansiyel alıcılar için 
 Özetinde mutlaka "Artılar" ve "Eksiler" şeklinde bir ayrım yapmaya çalış.
 Dilin profesyonel ve bilgilendirici olsun. Kullanıcıya hitap ederken "Siz" diye hitap et.`;
 
-    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`, {
+    const response = await fetch(`https://openrouter.ai/api/v1/chat/completions`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
+        'Authorization': `Bearer ${apiKey}`,
+        'HTTP-Referer': 'https://www.piinti.com',
+        'X-Title': 'Piinti'
       },
       body: JSON.stringify({
-        contents: [
-          {
-            role: "user",
-            parts: [{ text: systemPrompt + "\n\nİncelemeler:\n" + reviewsText }]
-          }
+        model: 'google/gemini-2.0-pro-exp-02-05:free',
+        messages: [
+          { role: "system", content: systemPrompt },
+          { role: "user", content: "İncelemeler:\n" + reviewsText }
         ],
-        generationConfig: {
-          temperature: 0.7,
-          maxOutputTokens: 512,
-        }
+        temperature: 0.7,
+        max_tokens: 512,
       })
     });
 
     const data = await response.json();
-    const summary = data.candidates?.[0]?.content?.parts?.[0]?.text || "İnceleme özetleri şu anda hazırlanamıyor. Lütfen daha sonra tekrar deneyiniz.";
+    const summary = data.choices?.[0]?.message?.content || "İnceleme özetleri şu anda hazırlanamıyor. Lütfen daha sonra tekrar deneyiniz.";
 
     return NextResponse.json({ summary });
 

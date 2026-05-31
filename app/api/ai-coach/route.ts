@@ -51,21 +51,27 @@ export async function POST(req: Request) {
 Kullanıcılara karşı nazik, profesyonel ve kurumsal bir dille hitap edersiniz. "Siz", "Sayın Kullanıcı" veya "Hoş geldiniz" gibi resmi ifadeler kullanmalısınız.
 Eğer veritabanımızdan ürün bilgisi gelirse, bu ürünleri fiyatları ve linkleriyle birlikte önerin. Gelmezse, genel tavsiyelerde bulunun.`;
 
-    const modelName = 'gemini-2.0-flash';
+    const modelName = 'google/gemini-2.0-pro-exp-02-05:free';
     
     const callGemini = async (retryCount = 0): Promise<any> => {
       const payload = {
-        contents: [{
-          role: "user",
-          parts: [{ text: systemPrompt + dbContext + "\n\nKullanıcı: " + lastMessage }]
-        }],
-        generationConfig: { temperature: 0.7, maxOutputTokens: 1024 }
+        model: modelName,
+        messages: [
+          { role: "system", content: systemPrompt + dbContext },
+          { role: "user", content: lastMessage }
+        ],
+        temperature: 0.7,
+        max_tokens: 1024
       };
-      // console.log("Gemini Payload:", JSON.stringify(payload, null, 2));
       
-      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`, {
+      const response = await fetch(`https://openrouter.ai/api/v1/chat/completions`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${apiKey}`,
+          'HTTP-Referer': 'https://www.piinti.com',
+          'X-Title': 'Piinti'
+        },
         body: JSON.stringify(payload)
       });
 
@@ -90,11 +96,11 @@ Eğer veritabanımızdan ürün bilgisi gelirse, bu ürünleri fiyatları ve lin
       if (!response.ok || data.error) {
         const errCode = data.error?.code || response.status || 'Bilinmiyor';
         const errMsg = data.error?.message || response.statusText || 'Detay yok';
-        console.error(`Gemini API Error (${errCode}):`, errMsg);
+        console.error(`OpenRouter API Error (${errCode}):`, errMsg);
         
         let friendlyMsg = `Şu anda AI motorumuzda geçici bir sorun yaşanmaktadır. (Kod: ${errCode}). Lütfen kısa bir süre sonra tekrar deneyiniz.`;
-        if (errMsg.includes('API key') || errMsg.includes('API_KEY_INVALID')) friendlyMsg = "Gemini API anahtarının (GEMINI_API_KEY) süresi dolmuş veya geçersiz. Lütfen yeni bir API anahtarı alıp Vercel'e ekleyin.";
-        if (errMsg.includes('quota') || errMsg.includes('RESOURCE_EXHAUSTED')) friendlyMsg = "Yapay zeka servisinin kullanım limiti geçici olarak dolmuştur. Kısa süre içinde tekrar aktif olacaktır.";
+        if (errMsg.includes('key') || errMsg.includes('auth')) friendlyMsg = "OpenRouter API anahtarının süresi dolmuş veya geçersiz. Lütfen yeni bir API anahtarı alıp Vercel'e ekleyin.";
+        if (errMsg.includes('quota') || errMsg.includes('limit')) friendlyMsg = "Yapay zeka servisinin kullanım limiti geçici olarak dolmuştur. Kısa süre içinde tekrar aktif olacaktır.";
         if (errMsg.includes('not found') || errMsg.includes('NOT_FOUND')) friendlyMsg = "İstenen AI modeli bulunamadı. Sistem otomatik olarak güncelleniyor.";
         
         return NextResponse.json({ 
@@ -103,7 +109,7 @@ Eğer veritabanımızdan ürün bilgisi gelirse, bu ürünleri fiyatları ve lin
         });
       }
       
-      const botResponse = data.candidates?.[0]?.content?.parts?.[0]?.text;
+      const botResponse = data.choices?.[0]?.message?.content;
       
       if (!botResponse) {
         return NextResponse.json({ 
@@ -118,7 +124,7 @@ Eğer veritabanımızdan ürün bilgisi gelirse, bu ürünleri fiyatları ve lin
       });
 
     } catch (e: any) {
-      console.error('Fetch error for Gemini:', e.message);
+      console.error('Fetch error for AI:', e.message);
       return NextResponse.json({ 
         role: 'bot', 
         text: 'Sunucu ile bağlantı sağlanamadı. Birazdan tekrar deneyin.' 
