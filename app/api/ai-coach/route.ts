@@ -51,7 +51,7 @@ export async function POST(req: Request) {
 Kullanıcılara karşı nazik, profesyonel ve kurumsal bir dille hitap edersiniz. "Siz", "Sayın Kullanıcı" veya "Hoş geldiniz" gibi resmi ifadeler kullanmalısınız.
 Eğer veritabanımızdan ürün bilgisi gelirse, bu ürünleri fiyatları ve linkleriyle birlikte önerin. Gelmezse, genel tavsiyelerde bulunun.`;
 
-    const modelName = 'google/gemini-2.0-pro-exp-02-05:free';
+    const modelName = 'meta-llama/llama-3.3-70b-instruct:free';
     
     const callGemini = async (retryCount = 0): Promise<any> => {
       const payload = {
