@@ -3,7 +3,7 @@ import { redirect } from 'next/navigation';
 import { logout } from '../giris/actions';
 import { User, LogOut, Heart, BellRing, Settings } from 'lucide-react';
 import Link from 'next/link';
-
+import Image from 'next/image';
 export const metadata = {
   title: 'Profilim - Piinti v2',
 };
@@ -18,17 +18,43 @@ export default async function ProfilePage() {
     redirect('/giris');
   }
 
-  // Kullanıcı istatistiklerini getir
   let favCount = 0;
   let alertCount = 0;
+  let favorites: any[] = [];
+  let priceAlerts: any[] = [];
   
   try {
-     const { count: fC } = await supabase.from('user_favorites').select('*', { count: 'exact', head: true }).eq('user_id', user.id);
+     // Fetch Favorites
+     const { data: fData, count: fC } = await supabase
+        .from('user_favorites')
+        .select(`
+          id,
+          product_id,
+          products (id, title, slug, image_url, product_prices(price))
+        `, { count: 'exact' })
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false });
+        
      if(fC) favCount = fC;
+     if(fData) favorites = fData;
      
-     const { count: aC } = await supabase.from('price_alerts').select('*', { count: 'exact', head: true }).eq('user_id', user.id);
+     // Fetch Price Alerts
+     const { data: aData, count: aC } = await supabase
+        .from('price_alerts')
+        .select(`
+          id,
+          target_price,
+          product_id,
+          products (id, title, slug, image_url)
+        `, { count: 'exact' })
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false });
+        
      if(aC) alertCount = aC;
-  } catch(e) {}
+     if(aData) priceAlerts = aData;
+  } catch(e) {
+      console.error('Error fetching profile data:', e);
+  }
 
   return (
     <div className="pt-24 pb-16 min-h-screen bg-slate-50">
@@ -88,8 +114,27 @@ export default async function ProfilePage() {
                         <p className="text-xs mt-1">Hemen fırsatları aramaya başla!</p>
                     </div>
                 ) : (
-                    <div className="text-center py-12 px-4 text-slate-400 font-medium text-sm">
-                        Çok yakında ürün gridi buraya entegre edilecek.
+                    <div className="flex flex-col gap-3">
+                        {favorites.map((fav) => {
+                            const p = fav.products;
+                            if (!p) return null;
+                            const prices = p.product_prices?.map((pp: any) => pp.price) || [];
+                            const minPrice = prices.length > 0 ? Math.min(...prices) : null;
+                            
+                            return (
+                                <Link href={`/urunler/${p.slug}`} key={fav.id} className="flex items-center gap-4 p-3 rounded-2xl hover:bg-slate-50 border border-transparent hover:border-slate-100 transition-colors group">
+                                    <div className="w-16 h-16 bg-white rounded-xl border border-slate-100 overflow-hidden flex-shrink-0 relative">
+                                        <Image src={p.image_url || '/placeholder.png'} alt={p.title} fill className="object-contain p-1" sizes="64px" />
+                                    </div>
+                                    <div className="flex-1 min-w-0">
+                                        <h3 className="text-sm font-bold text-slate-800 truncate group-hover:text-teal-600 transition-colors">{p.title}</h3>
+                                        <p className="text-xs text-slate-500 font-medium mt-1">
+                                            {minPrice ? `${minPrice.toLocaleString('tr-TR')} ₺'den başlayan fiyatlar` : 'Fiyat bilgisi yok'}
+                                        </p>
+                                    </div>
+                                </Link>
+                            );
+                        })}
                     </div>
                 )}
             </div>
@@ -109,8 +154,25 @@ export default async function ProfilePage() {
                         <p className="text-xs mt-1">Ürünlerdeki zil ikonuna tıklayarak alarm kurabilirsin.</p>
                     </div>
                 ) : (
-                    <div className="text-center py-12 px-4 text-slate-400 font-medium text-sm">
-                        Kurulan alarmlarınız listeleniyor... (Çok Yakında)
+                    <div className="flex flex-col gap-3">
+                        {priceAlerts.map((alert) => {
+                            const p = alert.products;
+                            if (!p) return null;
+                            
+                            return (
+                                <Link href={`/urunler/${p.slug}`} key={alert.id} className="flex items-center gap-4 p-3 rounded-2xl hover:bg-slate-50 border border-transparent hover:border-slate-100 transition-colors group">
+                                    <div className="w-16 h-16 bg-white rounded-xl border border-slate-100 overflow-hidden flex-shrink-0 relative">
+                                        <Image src={p.image_url || '/placeholder.png'} alt={p.title} fill className="object-contain p-1" sizes="64px" />
+                                    </div>
+                                    <div className="flex-1 min-w-0">
+                                        <h3 className="text-sm font-bold text-slate-800 truncate group-hover:text-teal-600 transition-colors">{p.title}</h3>
+                                        <div className="flex items-center gap-2 mt-1">
+                                            <span className="text-xs font-bold text-amber-600 bg-amber-50 px-2 py-0.5 rounded-md">Hedef: {alert.target_price.toLocaleString('tr-TR')} ₺</span>
+                                        </div>
+                                    </div>
+                                </Link>
+                            );
+                        })}
                     </div>
                 )}
             </div>
