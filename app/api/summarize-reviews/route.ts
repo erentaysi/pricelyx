@@ -41,7 +41,7 @@ Dilin profesyonel ve bilgilendirici olsun. Kullanıcıya hitap ederken "Siz" diy
         'X-Title': 'Piinti'
       },
       body: JSON.stringify({
-        model: 'meta-llama/llama-3.3-70b-instruct:free',
+        model: 'openrouter/auto',
         messages: [
           { role: "system", content: systemPrompt },
           { role: "user", content: "İncelemeler:\n" + reviewsText }
