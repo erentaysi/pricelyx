@@ -1,9 +1,10 @@
 import { createClient } from '@/lib/supabase/server';
 import { redirect } from 'next/navigation';
 import { logout } from '../giris/actions';
-import { User, LogOut, Heart, BellRing, Settings } from 'lucide-react';
+import { User, LogOut, Heart, BellRing, Settings, ExternalLink } from 'lucide-react';
 import Link from 'next/link';
 import Image from 'next/image';
+
 export const metadata = {
   title: 'Profilim - Piinti v2',
 };
@@ -14,7 +15,6 @@ export default async function ProfilePage() {
   const { data: { user }, error } = await supabase.auth.getUser();
 
   if (error || !user) {
-    // Profil korumalı rotadır.
     redirect('/giris');
   }
 
@@ -24,66 +24,75 @@ export default async function ProfilePage() {
   let priceAlerts: any[] = [];
   
   try {
-     // Fetch Favorites - simple query first
-     const { data: favRows, count: fC } = await supabase
+     // ===== FAVORİLER =====
+     const { data: favRows, count: fC, error: favError } = await supabase
         .from('user_favorites')
         .select('id, product_id, created_at', { count: 'exact' })
         .eq('user_id', user.id)
         .order('created_at', { ascending: false });
-        
-     if(fC) favCount = fC;
      
-     // Fetch product details for favorites
+     if (favError) console.error('Fav query error:', favError.message);
+     if (fC) favCount = fC;
+     
      if (favRows && favRows.length > 0) {
         const productIds = favRows.map(f => f.product_id);
-        const { data: favProducts } = await supabase
+        
+        const { data: favProducts, error: prodError } = await supabase
            .from('products')
            .select('id, title, slug, image_url')
            .in('id', productIds);
         
-        // Fetch prices for these products
+        if (prodError) console.error('Fav products query error:', prodError.message);
+        
         const { data: favPrices } = await supabase
            .from('product_prices')
            .select('product_id, price')
            .in('product_id', productIds);
         
         favorites = favRows.map(fav => {
-           const product = favProducts?.find(p => p.id === fav.product_id);
+           const product = favProducts?.find(p => p.id === fav.product_id) || null;
            const prices = favPrices?.filter(pp => pp.product_id === fav.product_id).map(pp => pp.price) || [];
            return { ...fav, product, prices };
         });
      }
      
-     // Fetch Price Alerts - simple query
-     const { data: alertRows, count: aC } = await supabase
+     // ===== FİYAT ALARMLARI =====
+     const { data: alertRows, count: aC, error: alertError } = await supabase
         .from('price_alerts')
-        .select('id, product_id, target_price, created_at', { count: 'exact' })
+        .select('id, product_id, target_price, email, created_at', { count: 'exact' })
         .eq('user_id', user.id)
         .order('created_at', { ascending: false });
-        
-     if(aC) alertCount = aC;
      
-     // Fetch product details for alerts
+     if (alertError) console.error('Alert query error:', alertError.message);
+     if (aC) alertCount = aC;
+     
      if (alertRows && alertRows.length > 0) {
-        const alertProductIds = alertRows.map(a => a.product_id);
-        const { data: alertProducts } = await supabase
-           .from('products')
-           .select('id, title, slug, image_url')
-           .in('id', alertProductIds);
+        const alertProductIds = alertRows.map(a => a.product_id).filter(Boolean);
+        
+        let alertProducts: any[] = [];
+        if (alertProductIds.length > 0) {
+           const { data: ap, error: apError } = await supabase
+              .from('products')
+              .select('id, title, slug, image_url')
+              .in('id', alertProductIds);
+           if (apError) console.error('Alert products query error:', apError.message);
+           if (ap) alertProducts = ap;
+        }
         
         priceAlerts = alertRows.map(alert => {
-           const product = alertProducts?.find(p => p.id === alert.product_id);
+           const product = alertProducts.find(p => p.id === alert.product_id) || null;
            return { ...alert, product };
         });
      }
   } catch(e: any) {
-      console.error('Error fetching profile data:', e?.message || e);
+      console.error('Profile data error:', e?.message || e);
   }
 
   return (
     <div className="pt-24 pb-16 min-h-screen bg-slate-50">
       <div className="container mx-auto px-4 max-w-5xl">
         
+        {/* Profil Kartı */}
         <div className="mb-8 p-8 bg-white border border-slate-100 rounded-3xl shadow-sm flex flex-col md:flex-row items-center md:items-start gap-6 relative overflow-hidden">
           <div className="absolute top-0 right-0 w-64 h-64 bg-teal-400/5 rounded-full blur-[80px] pointer-events-none"></div>
           
@@ -128,7 +137,7 @@ export default async function ProfilePage() {
                     <h2 className="text-lg font-black flex items-center gap-2 text-slate-800">
                        <Heart className="w-5 h-5 text-rose-500 fill-rose-500" /> Favorilerim
                     </h2>
-                    <Link href="/urunler" className="text-sm font-bold text-teal-600 hover:underline">Tümünü Keşfet</Link>
+                    <Link href="/urunler" className="text-sm font-bold text-teal-600 hover:underline">Ürünleri Keşfet</Link>
                 </div>
                 
                 {favCount === 0 ? (
@@ -141,20 +150,32 @@ export default async function ProfilePage() {
                     <div className="flex flex-col gap-3">
                         {favorites.map((fav) => {
                             const p = fav.product;
-                            if (!p) return null;
                             const minPrice = fav.prices && fav.prices.length > 0 ? Math.min(...fav.prices) : null;
                             
                             return (
-                                <Link href={`/urunler/${p.slug}`} key={fav.id} className="flex items-center gap-4 p-3 rounded-2xl hover:bg-slate-50 border border-transparent hover:border-slate-100 transition-colors group">
+                                <Link 
+                                  href={p?.slug ? `/urunler/${p.slug}` : '/urunler'} 
+                                  key={fav.id} 
+                                  className="flex items-center gap-4 p-3 rounded-2xl hover:bg-slate-50 border border-transparent hover:border-slate-100 transition-colors group"
+                                >
                                     <div className="w-16 h-16 bg-white rounded-xl border border-slate-100 overflow-hidden flex-shrink-0 relative">
-                                        <Image src={p.image_url || '/placeholder.png'} alt={p.title} fill className="object-contain p-1" sizes="64px" />
+                                        {p?.image_url ? (
+                                            <Image src={p.image_url} alt={p?.title || 'Ürün'} fill className="object-contain p-1" sizes="64px" />
+                                        ) : (
+                                            <div className="w-full h-full flex items-center justify-center">
+                                                <Heart className="w-6 h-6 text-rose-300" />
+                                            </div>
+                                        )}
                                     </div>
                                     <div className="flex-1 min-w-0">
-                                        <h3 className="text-sm font-bold text-slate-800 truncate group-hover:text-teal-600 transition-colors">{p.title}</h3>
+                                        <h3 className="text-sm font-bold text-slate-800 truncate group-hover:text-teal-600 transition-colors">
+                                            {p?.title || 'Favori Ürün'}
+                                        </h3>
                                         <p className="text-xs text-slate-500 font-medium mt-1">
-                                            {minPrice ? `${minPrice.toLocaleString('tr-TR')} ₺'den başlayan fiyatlar` : 'Fiyat bilgisi yok'}
+                                            {minPrice ? `${minPrice.toLocaleString('tr-TR')} ₺'den başlayan fiyatlar` : 'Fiyat bilgisi yükleniyor...'}
                                         </p>
                                     </div>
+                                    <ExternalLink className="w-4 h-4 text-slate-300 group-hover:text-teal-500 transition-colors flex-shrink-0" />
                                 </Link>
                             );
                         })}
@@ -168,6 +189,7 @@ export default async function ProfilePage() {
                     <h2 className="text-lg font-black flex items-center gap-2 text-slate-800">
                        <BellRing className="w-5 h-5 text-amber-500" /> Fiyat Kapanları
                     </h2>
+                    <span className="text-xs font-bold text-slate-400 bg-slate-50 px-3 py-1 rounded-lg">{alertCount} Alarm</span>
                 </div>
                 
                 {alertCount === 0 ? (
@@ -180,19 +202,33 @@ export default async function ProfilePage() {
                     <div className="flex flex-col gap-3">
                         {priceAlerts.map((alert) => {
                             const p = alert.product;
-                            if (!p) return null;
                             
                             return (
-                                <Link href={`/urunler/${p.slug}`} key={alert.id} className="flex items-center gap-4 p-3 rounded-2xl hover:bg-slate-50 border border-transparent hover:border-slate-100 transition-colors group">
+                                <Link 
+                                  href={p?.slug ? `/urunler/${p.slug}` : '/urunler'} 
+                                  key={alert.id} 
+                                  className="flex items-center gap-4 p-3 rounded-2xl hover:bg-slate-50 border border-transparent hover:border-slate-100 transition-colors group"
+                                >
                                     <div className="w-16 h-16 bg-white rounded-xl border border-slate-100 overflow-hidden flex-shrink-0 relative">
-                                        <Image src={p.image_url || '/placeholder.png'} alt={p.title} fill className="object-contain p-1" sizes="64px" />
+                                        {p?.image_url ? (
+                                            <Image src={p.image_url} alt={p?.title || 'Ürün'} fill className="object-contain p-1" sizes="64px" />
+                                        ) : (
+                                            <div className="w-full h-full flex items-center justify-center">
+                                                <BellRing className="w-6 h-6 text-amber-300" />
+                                            </div>
+                                        )}
                                     </div>
                                     <div className="flex-1 min-w-0">
-                                        <h3 className="text-sm font-bold text-slate-800 truncate group-hover:text-teal-600 transition-colors">{p.title}</h3>
+                                        <h3 className="text-sm font-bold text-slate-800 truncate group-hover:text-teal-600 transition-colors">
+                                            {p?.title || 'Alarm Kurulu Ürün'}
+                                        </h3>
                                         <div className="flex items-center gap-2 mt-1">
-                                            <span className="text-xs font-bold text-amber-600 bg-amber-50 px-2 py-0.5 rounded-md">Hedef: {alert.target_price.toLocaleString('tr-TR')} ₺</span>
+                                            <span className="text-xs font-bold text-amber-600 bg-amber-50 px-2 py-0.5 rounded-md">
+                                                Hedef: {alert.target_price?.toLocaleString('tr-TR') || '—'} ₺
+                                            </span>
                                         </div>
                                     </div>
+                                    <ExternalLink className="w-4 h-4 text-slate-300 group-hover:text-teal-500 transition-colors flex-shrink-0" />
                                 </Link>
                             );
                         })}
