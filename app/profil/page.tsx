@@ -24,36 +24,60 @@ export default async function ProfilePage() {
   let priceAlerts: any[] = [];
   
   try {
-     // Fetch Favorites
-     const { data: fData, count: fC } = await supabase
+     // Fetch Favorites - simple query first
+     const { data: favRows, count: fC } = await supabase
         .from('user_favorites')
-        .select(`
-          id,
-          product_id,
-          products (id, title, slug, image_url, product_prices(price))
-        `, { count: 'exact' })
+        .select('id, product_id, created_at', { count: 'exact' })
         .eq('user_id', user.id)
         .order('created_at', { ascending: false });
         
      if(fC) favCount = fC;
-     if(fData) favorites = fData;
      
-     // Fetch Price Alerts
-     const { data: aData, count: aC } = await supabase
+     // Fetch product details for favorites
+     if (favRows && favRows.length > 0) {
+        const productIds = favRows.map(f => f.product_id);
+        const { data: favProducts } = await supabase
+           .from('products')
+           .select('id, title, slug, image_url')
+           .in('id', productIds);
+        
+        // Fetch prices for these products
+        const { data: favPrices } = await supabase
+           .from('product_prices')
+           .select('product_id, price')
+           .in('product_id', productIds);
+        
+        favorites = favRows.map(fav => {
+           const product = favProducts?.find(p => p.id === fav.product_id);
+           const prices = favPrices?.filter(pp => pp.product_id === fav.product_id).map(pp => pp.price) || [];
+           return { ...fav, product, prices };
+        });
+     }
+     
+     // Fetch Price Alerts - simple query
+     const { data: alertRows, count: aC } = await supabase
         .from('price_alerts')
-        .select(`
-          id,
-          target_price,
-          product_id,
-          products (id, title, slug, image_url)
-        `, { count: 'exact' })
+        .select('id, product_id, target_price, created_at', { count: 'exact' })
         .eq('user_id', user.id)
         .order('created_at', { ascending: false });
         
      if(aC) alertCount = aC;
-     if(aData) priceAlerts = aData;
-  } catch(e) {
-      console.error('Error fetching profile data:', e);
+     
+     // Fetch product details for alerts
+     if (alertRows && alertRows.length > 0) {
+        const alertProductIds = alertRows.map(a => a.product_id);
+        const { data: alertProducts } = await supabase
+           .from('products')
+           .select('id, title, slug, image_url')
+           .in('id', alertProductIds);
+        
+        priceAlerts = alertRows.map(alert => {
+           const product = alertProducts?.find(p => p.id === alert.product_id);
+           return { ...alert, product };
+        });
+     }
+  } catch(e: any) {
+      console.error('Error fetching profile data:', e?.message || e);
   }
 
   return (
@@ -116,10 +140,9 @@ export default async function ProfilePage() {
                 ) : (
                     <div className="flex flex-col gap-3">
                         {favorites.map((fav) => {
-                            const p = fav.products;
+                            const p = fav.product;
                             if (!p) return null;
-                            const prices = p.product_prices?.map((pp: any) => pp.price) || [];
-                            const minPrice = prices.length > 0 ? Math.min(...prices) : null;
+                            const minPrice = fav.prices && fav.prices.length > 0 ? Math.min(...fav.prices) : null;
                             
                             return (
                                 <Link href={`/urunler/${p.slug}`} key={fav.id} className="flex items-center gap-4 p-3 rounded-2xl hover:bg-slate-50 border border-transparent hover:border-slate-100 transition-colors group">
@@ -156,7 +179,7 @@ export default async function ProfilePage() {
                 ) : (
                     <div className="flex flex-col gap-3">
                         {priceAlerts.map((alert) => {
-                            const p = alert.products;
+                            const p = alert.product;
                             if (!p) return null;
                             
                             return (
