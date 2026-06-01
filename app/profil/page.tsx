@@ -4,6 +4,7 @@ import { logout } from '../giris/actions';
 import { User, LogOut, Heart, BellRing, Settings, ExternalLink } from 'lucide-react';
 import Link from 'next/link';
 import Image from 'next/image';
+import { generateProductSlug } from '@/lib/utils';
 
 export const metadata = {
   title: 'Profilim - Piinti v2',
@@ -39,7 +40,7 @@ export default async function ProfilePage() {
         
         const { data: favProducts, error: prodError } = await supabase
            .from('products')
-           .select('id, title, slug, image_url')
+           .select('id, title, image_url')
            .in('id', productIds);
         
         if (prodError) console.error('Fav products query error:', prodError.message);
@@ -73,7 +74,7 @@ export default async function ProfilePage() {
         if (alertProductIds.length > 0) {
            const { data: ap, error: apError } = await supabase
               .from('products')
-              .select('id, title, slug, image_url')
+              .select('id, title, image_url')
               .in('id', alertProductIds);
            if (apError) console.error('Alert products query error:', apError.message);
            if (ap) alertProducts = ap;
@@ -154,7 +155,7 @@ export default async function ProfilePage() {
                             
                             return (
                                 <Link 
-                                  href={p?.slug ? `/urunler/${p.slug}` : '/urunler'} 
+                                  href={p ? `/urun/${generateProductSlug(p.title, p.id)}` : '/urunler'} 
                                   key={fav.id} 
                                   className="flex items-center gap-4 p-3 rounded-2xl hover:bg-slate-50 border border-transparent hover:border-slate-100 transition-colors group"
                                 >
@@ -205,7 +206,7 @@ export default async function ProfilePage() {
                             
                             return (
                                 <Link 
-                                  href={p?.slug ? `/urunler/${p.slug}` : '/urunler'} 
+                                  href={p ? `/urun/${generateProductSlug(p.title, p.id)}` : '/urunler'} 
                                   key={alert.id} 
                                   className="flex items-center gap-4 p-3 rounded-2xl hover:bg-slate-50 border border-transparent hover:border-slate-100 transition-colors group"
                                 >
