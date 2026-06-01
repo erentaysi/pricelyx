@@ -1,12 +1,7 @@
 const puppeteer = require('puppeteer-extra');
 const StealthPlugin = require('puppeteer-extra-plugin-stealth');
 puppeteer.use(StealthPlugin());
-const { createClient } = require('@supabase/supabase-js');
-
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://gocwltgntiiklxwljdin.supabase.co', 
-  process.env.SUPABASE_SERVICE_ROLE_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdvY3dsdGdudGlpa2x4d2xqZGluIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njk2Nzc5MTAsImV4cCI6MjA4NTI1MzkxMH0.7jsdKarZrw33hRL71zPAtMZsNm7iScfJ5LjpHr-e5Bo'
-);
+const { matchAndSaveProduct, getOrCreateVendor, clearCache } = require('./product-matcher');
 
 async function scrapeN11() {
     console.log('🚀 N11 Stealth Tarayıcısı Başlatılıyor...');
@@ -29,23 +24,8 @@ async function scrapeN11() {
     ];
     let allProducts = [];
 
-    const vendorName = 'n11';
-    let vendorId = null;
-    
-    // Vendor'u bul veya oluştur
-    const { data: vData } = await supabase.from('vendors').select('id').eq('name', vendorName).single();
-    if (vData) {
-        vendorId = vData.id;
-    } else {
-        const { data: newVendor } = await supabase.from('vendors').insert({ name: vendorName }).select().single();
-        if (newVendor) vendorId = newVendor.id;
-    }
-
-    if (!vendorId) {
-        console.error('❌ n11 vendor ID oluşturulamadı!');
-        await browser.close();
-        return;
-    }
+    const vendorId = await getOrCreateVendor('n11', '🔵', '#5B2D8E');
+    if (!vendorId) { console.error('Vendor oluşturulamadı!'); await browser.close(); return; }
 
     for (const query of searchQueries) {
         console.log(`\n🔍 Aranıyor: ${query} (N11)`);
@@ -108,76 +88,18 @@ async function scrapeN11() {
     await browser.close();
     console.log(`\n🎉 Toplam ${allProducts.length} N11 ürünü çekildi. Supabase'e aktarılıyor...`);
 
-    // Ingest to database
+    clearCache();
     let processedCount = 0;
-    const { data: categories } = await supabase.from('categories').select('id, slug');
-    const { data: brands } = await supabase.from('brands').select('id, name');
-
-    for(const p of allProducts) {
-        if(!p.title || !p.price) continue;
-        
-        // Clean title
-        let cleanTitle = p.title.replace(/(Hızlı Teslimat|Ücretsiz Kargo|Kargo Bedava|Süper Fırsat|Flaş İndirim|Sepette İndirim)/gi, '').trim();
-        if (cleanTitle.length < 5) continue;
-
-        let brandObj = brands.find(b => b.name.toLowerCase() === p.brand.toLowerCase());
-        if(!brandObj) {
-            const { data: nb } = await supabase.from('brands').insert({ name: p.brand }).select().single();
-            if(nb) { brands.push(nb); brandObj = nb; }
-        }
-
-        let catSlug = 'elektronik';
-        const t = cleanTitle.toLowerCase();
-        if((t.includes('telefon') || t.includes('iphone') || t.includes('samsung galaxy') || t.includes('poco') || t.includes('xiaomi')) && !t.includes('kılıf')) catSlug = 'akilli-telefon';
-        else if(t.includes('süpürge') || t.includes('airfryer') || t.includes('dyson') || t.includes('robot') || t.includes('kahve makinesi') || t.includes('çay makinesi')) catSlug = 'ev-yasam';
-        else if(t.includes('kulaklık') || t.includes('airpods') || t.includes('bluetooth') || t.includes('buds') || t.includes('playstation') || t.includes('akıllı saat')) catSlug = 'elektronik';
-        else if(t.includes('laptop') || t.includes('bilgisayar') || t.includes('macbook') || t.includes('oyuncu')) catSlug = 'bilgisayar-laptop';
-        else if(t.includes('parfüm') || t.includes('tıraş') || t.includes('epilasyon') || t.includes('kurutma')) catSlug = 'kozmetik-kisisel-bakim';
-
-        let catObj = categories.find(c => c.slug === catSlug);
-
-        const { data: existingProd } = await supabase.from('products').select('id').ilike('title', cleanTitle).limit(1);
-        let pId = existingProd && existingProd[0] ? existingProd[0].id : null;
-
-        if(!pId) {
-            const mockSpecs = catSlug === 'akilli-telefon' 
-                ? { "Ekran": "6.7 inç AMOLED", "İşlemci": "Snapdragon 8 Gen 3", "Batarya": "5500 mAh", "Garanti": "2 Yıl" }
-                : catSlug === 'bilgisayar-laptop'
-                ? { "Ram": "16 GB DDR5", "İşlemci": "Intel Core i7", "Ekran": "15.6 inç FHD", "SSD": "512 GB" }
-                : { "Güç": "2400W", "Renk": "Siyah/Gri", "Garanti": "2 Yıl", "Enerji Sınıfı": "A++" };
-
-            const { data: nProd } = await supabase.from('products').insert({
-                title: cleanTitle,
-                brand_id: brandObj ? brandObj.id : null,
-                category_id: catObj ? catObj.id : null,
-                image_url: p.image,
-                rating: 4.7,
-                reviews_count: Math.floor(Math.random() * 600) + 80,
-                is_trend: true,
-                specs: mockSpecs
-            }).select().single();
-            if(nProd) pId = nProd.id;
-        }
-
-        if(pId) {
-            const { data: ep } = await supabase.from('product_prices').select('id').eq('product_id', pId).eq('vendor_id', vendorId).single();
-            if(!ep) {
-                await supabase.from('product_prices').insert({
-                    product_id: pId,
-                    vendor_id: vendorId,
-                    price: p.price,
-                    original_price: Math.floor(p.price * 1.08),
-                    product_url: p.url,
-                    shipping_info: 'Ücretsiz Kargo'
-                });
-                await supabase.from('price_history').insert({
-                    product_id: pId, vendor_id: vendorId, price: p.price
-                });
-            } else {
-                await supabase.from('product_prices').update({ price: p.price, product_url: p.url }).eq('id', ep.id);
-            }
-            processedCount++;
-        }
+    for (const p of allProducts) {
+        const pid = await matchAndSaveProduct({
+            title: p.title,
+            price: p.price,
+            image: p.image,
+            url: p.url,
+            vendorId: vendorId,
+            shippingInfo: 'Standart Kargo'
+        });
+        if (pid) processedCount++;
     }
     
     console.log(`✅ N11 veritabanı eşitlemesi tamamlandı! İşlenen: ${processedCount}`);

@@ -2,20 +2,32 @@ const { execSync } = require('child_process');
 
 console.log('🔄 Tüm scraper botları sırayla çalıştırılıyor. Lütfen bekleyin...');
 
+const scrapers = [
+    { name: 'Amazon TR', file: 'scraper-amazontr.js' },
+    { name: 'Hepsiburada', file: 'scraper-hepsiburada.js' },
+    { name: 'Trendyol', file: 'scraper-trendyol.js' },
+    { name: 'N11', file: 'scraper-n11.js' },
+    { name: 'PttAVM', file: 'scraper-pttavm.js' },
+    { name: 'MediaMarkt', file: 'scraper-mediamarkt.js' },
+    { name: 'Vatan Bilgisayar', file: 'scraper-vatan.js' },
+    { name: 'Pazarama', file: 'scraper-pazarama.js' },
+    { name: 'Teknosa', file: 'scraper-teknosa.js' },
+    { name: 'Çiçeksepeti', file: 'scraper-ciceksepeti.js' }
+];
+
 try {
-    console.log('--- 1. Amazon TR Başlıyor ---');
-    execSync('node scripts/scraper-amazontr.js', { stdio: 'inherit' });
+    for (let i = 0; i < scrapers.length; i++) {
+        const scraper = scrapers[i];
+        console.log(`\n--- ${i + 1}. ${scraper.name} Başlıyor ---`);
+        try {
+            execSync(`node scripts/${scraper.file}`, { stdio: 'inherit' });
+        } catch (err) {
+            console.error(`⚠️ ${scraper.name} çalışırken hata oluştu. Diğerlerine geçiliyor...`);
+            // Continue with other scrapers even if one fails
+        }
+    }
     
-    console.log('--- 2. Hepsiburada Başlıyor ---');
-    execSync('node scripts/scraper-hepsiburada.js', { stdio: 'inherit' });
-    
-    console.log('--- 3. Trendyol Başlıyor ---');
-    execSync('node scripts/scraper-trendyol.js', { stdio: 'inherit' });
-    
-    console.log('--- 4. N11 Başlıyor ---');
-    execSync('node scripts/scraper-n11.js', { stdio: 'inherit' });
-    
-    console.log('✅ Tüm botlar başarıyla çalıştı ve veritabanı doldu!');
+    console.log('\n✅ Tüm botlar çalıştırıldı!');
 } catch (error) {
-    console.error('❌ Botlar çalışırken bir hata oluştu:', error.message);
+    console.error('❌ Beklenmeyen bir hata oluştu:', error.message);
 }
