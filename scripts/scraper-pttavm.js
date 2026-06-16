@@ -1,6 +1,4 @@
-const puppeteer = require('puppeteer-extra');
-const StealthPlugin = require('puppeteer-extra-plugin-stealth');
-puppeteer.use(StealthPlugin());
+const { launchBrowser } = require('./browser-launcher');
 const { matchAndSaveProduct, getOrCreateVendor, clearCache } = require('./product-matcher');
 
 async function scrapePttAVM() {
@@ -11,11 +9,7 @@ async function scrapePttAVM() {
     if (!vendorId) { console.error('❌ Vendor oluşturulamadı!'); return; }
     console.log(`✅ Vendor ID: ${vendorId}`);
 
-    const browser = await puppeteer.launch({
-        headless: 'new',
-        executablePath: process.env.CHROME_PATH || 'C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe',
-        args: ['--no-sandbox', '--disable-setuid-sandbox', '--window-size=1920,1080']
-    });
+    const browser = await launchBrowser();
 
     const page = await browser.newPage();
     await page.setViewport({ width: 1920, height: 1080 });

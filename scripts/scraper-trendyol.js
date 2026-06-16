@@ -1,17 +1,11 @@
-const puppeteer = require('puppeteer-extra');
-const StealthPlugin = require('puppeteer-extra-plugin-stealth');
-puppeteer.use(StealthPlugin());
+const { launchBrowser } = require('./browser-launcher');
 const { matchAndSaveProduct, getOrCreateVendor, clearCache } = require('./product-matcher');
 
 async function scrapeTrendyol() {
     console.log('🚀 Trendyol Stealth Tarayıcısı Başlatılıyor...');
     
     // Launch browser
-    const browser = await puppeteer.launch({ 
-        headless: "new",
-        executablePath: process.env.CHROME_PATH || "C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe",
-        args: ['--no-sandbox', '--disable-setuid-sandbox', '--window-size=1920,1080']
-    });
+    const browser = await launchBrowser();
     
     const page = await browser.newPage();
     await page.setViewport({ width: 1920, height: 1080 });
@@ -89,12 +83,12 @@ async function scrapeTrendyol() {
             
             console.log(`✅ ${products.length} ürün bulundu (${query})`);
             allProducts = allProducts.concat(products);
-            
-            // Random delay to mimic human behavior
+
+            // Random delay between requests to mimic human behavior
             await new Promise(r => setTimeout(r, Math.random() * 2000 + 1000));
             
-        } catch(e) {
-            console.error(`Trendyol Hata (${query}):`, e.message);
+        } catch (error) {
+            console.error(`Hata (${query}):`, error.message);
         }
     }
 

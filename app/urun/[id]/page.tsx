@@ -24,7 +24,7 @@ import Image from 'next/image';
 
 import { Metadata } from 'next';
 
-export const revalidate = 3600; // 1 saatte bir önbelleği tazele (ISR)
+export const dynamic = 'force-dynamic';
 
 export async function generateMetadata({ params }: { params: { id: string } }): Promise<Metadata> {
   const actualId = extractIdFromSlug(params.id);
@@ -45,10 +45,10 @@ export async function generateMetadata({ params }: { params: { id: string } }): 
 
   const prices = product.product_prices || [];
   const minPrice = prices.length > 0 ? Math.min(...prices.map((p: any) => p.price)) : 0;
-  const priceText = minPrice > 0 ? `${new Intl.NumberFormat('tr-TR', { maximumFractionDigits: 0 }).format(Math.round(minPrice))} ₺'den başlayan fiyatlarla. ` : '';
+  const priceText = minPrice > 0 ? `${new Intl.NumberFormat('tr-TR', { maximumFractionDigits: 0 }).format(Math.round(minPrice))} ₺` : '';
 
-  const title = `${product.title} ${brandName} En Ucuz Fiyatı ve Özellikleri - Piinti`;
-  const description = `${product.title} ${brandName} modelini ${priceText}${categoryName} kategorisindeki en güncel fiyatları, fiyat geçmişini ve mağaza karşılaştırmalarını Piinti'de görün.`;
+  const title = `En Ucuz ${product.title} ${brandName} Fiyatı ve Özellikleri | Piinti`;
+  const description = `${product.title} ${brandName} en ucuz nerede satılıyor? Piinti ile güncel fiyatları, ${priceText} seviyesinden başlayan fırsatları, mağaza indirimlerini ve geçmiş fiyat grafiklerini karşılaştırın.`;
 
   return {
     title,
@@ -67,6 +67,7 @@ export default async function UrunDetay({ params }: { params: { id: string } }) 
     .from('products')
     .select(`
       *,
+      asin,
       brands (name),
       categories (name),
       product_prices (
@@ -97,6 +98,7 @@ export default async function UrunDetay({ params }: { params: { id: string } }) 
 
   const prices = product.product_prices || [];
   const lowestPrice = prices.length > 0 ? Math.min(...prices.map((p:any) => p.price)) : 0;
+  const highestPrice = prices.length > 0 ? Math.max(...prices.map((p:any) => p.price)) : 0;
   const sortedPrices = [...prices].sort((a:any, b:any) => a.price - b.price);
 
   function trPrice(price: number) {
@@ -117,11 +119,14 @@ export default async function UrunDetay({ params }: { params: { id: string } }) 
     offers: {
       '@type': 'AggregateOffer',
       priceCurrency: 'TRY',
-      lowPrice: lowestPrice,
+      lowPrice: lowestPrice > 0 ? lowestPrice : undefined,
+      highPrice: highestPrice > 0 ? highestPrice : undefined,
       offerCount: sortedPrices.length,
-      offers: sortedPrices.map(sp => ({
+      offers: sortedPrices.map((sp: any) => ({
         '@type': 'Offer',
         price: sp.price,
+        priceCurrency: 'TRY',
+        availability: sp.in_stock ? 'https://schema.org/InStock' : 'https://schema.org/OutOfStock',
         url: sp.product_url,
         seller: {
           '@type': 'Organization',
@@ -230,7 +235,7 @@ export default async function UrunDetay({ params }: { params: { id: string } }) 
               </div>
               <div className="flex flex-col items-center gap-4 w-full sm:w-auto">
                 <PriceAlertModal productId={product.id} productTitle={product.title} currentPrice={lowestPrice} />
-                {sortedPrices.length > 0 && (
+                {sortedPrices.length > 0 && sortedPrices[0].product_url && sortedPrices[0].product_url.startsWith('http') && (
                   <a href={sortedPrices[0].product_url} target="_blank" rel="noopener noreferrer" className="bg-white hover:bg-slate-100 text-slate-900 font-black h-14 px-10 rounded-2xl shadow-xl transition-all duration-300 hover:-translate-y-1 w-full sm:w-auto flex items-center justify-center gap-3 group">
                     Mağazaya İlerle <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
                   </a>
@@ -250,7 +255,16 @@ export default async function UrunDetay({ params }: { params: { id: string } }) 
                   </div>
                   <div className="bg-indigo-50 text-primary px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest border border-indigo-100">Son 90 Gün</div>
                 </div>
-                <PriceHistoryChart historyData={product.price_history || []} />
+                
+                {/* SEO Invisible Chart Image for Indexing */}
+                <img 
+                  src={product.image_url?.replace('http://', 'https://') || '/placeholder.png'} 
+                  alt={`${product.title} fiyat geçmişi ve değişim grafiği`}
+                  className="hidden" 
+                  aria-hidden="true" 
+                />
+                
+                <PriceHistoryChart historyData={product.price_history || []} productName={product.title} />
             </div>
 
             {/* AI PREDICTOR / BEKLENTİ ANALİZİ */}
@@ -318,9 +332,15 @@ export default async function UrunDetay({ params }: { params: { id: string } }) 
                     
                     <div className="flex flex-col items-end gap-3 text-right">
                        <span className="text-3xl font-black text-slate-900">{trPrice(storeConfig.price)}</span>
-                       <a href={storeConfig.product_url} target="_blank" rel="noopener noreferrer" className="text-xs font-black bg-slate-900 hover:bg-primary text-white px-8 py-4 rounded-xl transition-all duration-300 shadow-xl shadow-slate-900/10 w-full md:w-auto text-center uppercase tracking-widest">
-                         Mağazaya İlerle
-                       </a>
+                       {storeConfig.product_url && storeConfig.product_url.startsWith('http') ? (
+                         <a href={storeConfig.product_url} target="_blank" rel="noopener noreferrer" className="text-xs font-black bg-slate-900 hover:bg-primary text-white px-8 py-4 rounded-xl transition-all duration-300 shadow-xl shadow-slate-900/10 w-full md:w-auto text-center uppercase tracking-widest">
+                           Mağazaya İlerle
+                         </a>
+                       ) : (
+                         <span className="text-xs font-black bg-slate-200 text-slate-400 px-8 py-4 rounded-xl w-full md:w-auto text-center uppercase tracking-widest cursor-not-allowed">
+                           Fiyat Takibinde
+                         </span>
+                       )}
                     </div>
                   </div>
                  );
@@ -374,7 +394,18 @@ export default async function UrunDetay({ params }: { params: { id: string } }) 
                   </p>
                 </div>
              </section>
-        </div>
+         </div>
+
+         {/* SEO DYNAMIC CONTENT BLOCK */}
+         <div className="mt-16 bg-white p-8 rounded-[2rem] border border-slate-100 shadow-sm text-sm text-slate-600 leading-loose">
+           <h3 className="text-lg font-black text-slate-900 mb-4">{product.title} Hakkında Fiyat Bilgisi</h3>
+           <p>
+             Şu an Piinti veritabanında <strong>{product.title}</strong> için en ucuz fiyat {sortedPrices.length > 0 ? <>{sortedPrices[0].vendors?.name} üzerinde <strong>{trPrice(lowestPrice)}</strong></> : "henüz listelenmemiştir"} olarak görüntülenmektedir.
+             {highestPrice > lowestPrice && <> Piyasada bu ürün <strong>{trPrice(highestPrice)}</strong> seviyesine kadar çıkabilmektedir.</>} 
+             {product.price_history && product.price_history.length > 0 && <> Ayrıca, ürünün son 90 günlük <strong>fiyat geçmişi grafiğine</strong> baktığımızda piyasadaki anlık fiyat değişimlerini ve en uygun alım fırsatlarını gözlemleyebilirsiniz.</>}
+             Kullanıcı yorumları, teknik özellikleri ve mağaza güvenilirlik puanlarını inceleyerek <em>{brandName}</em> marka bu modeli en güvenli ve en uygun fiyata satın alabilirsiniz.
+           </p>
+         </div>
 
       </div>
     </main>

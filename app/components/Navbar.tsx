@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { Menu, X, User } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 
@@ -38,18 +39,15 @@ export default function Navbar() {
         <div className="flex items-center justify-between">
           {/* Logo */}
           <Link href="/" className="flex items-center group">
-            <svg width="160" height="40" viewBox="0 0 200 50" xmlns="http://www.w3.org/2000/svg" className="group-hover:scale-105 transition-transform duration-300">
-              <defs>
-                <linearGradient id="logoGradient" x1="0%" y1="0%" x2="100%" y2="0%">
-                  <stop offset="0%" style={{stopColor: "#2E86AB", stopOpacity: 1}} />
-                  <stop offset="100%" style={{stopColor: "#A23B72", stopOpacity: 1}} />
-                </linearGradient>
-              </defs>
-              <path d="M 10 35 L 10 15 C 10 10 15 5 20 5 L 30 5 C 35 5 40 10 40 15 C 40 20 35 25 30 25 L 20 25 M 10 25 L 35 45" 
-                stroke="url(#logoGradient)" strokeWidth="3" fill="none" strokeLinecap="round" strokeLinejoin="round"/>
-              <text x="45" y="32" fontFamily="'Inter', sans-serif" fontSize="26" fontWeight="900" fill="url(#logoGradient)">Piinti</text>
-              <text x="48" y="42" fontFamily="'Inter', sans-serif" fontSize="8" fontWeight="600" fill="#94a3b8" letterSpacing="1">PREMIUM ANALYTICS</text>
-            </svg>
+            <div className="relative w-[150px] h-[50px] group-hover:scale-105 transition-transform duration-300">
+              <Image 
+                src="/logo.png" 
+                alt="Piinti Logo" 
+                fill 
+                priority
+                className="object-contain"
+              />
+            </div>
           </Link>
           
           {/* Desktop Navigation */}

@@ -12,9 +12,10 @@ interface HistoryItem {
 
 interface Props {
   historyData: HistoryItem[];
+  productName?: string;
 }
 
-export default function PriceHistoryChart({ historyData }: Props) {
+export default function PriceHistoryChart({ historyData, productName }: Props) {
   const chartData = useMemo(() => {
     if (!historyData || historyData.length === 0) return [];
     
@@ -51,7 +52,11 @@ export default function PriceHistoryChart({ historyData }: Props) {
   const padding = (maxPrice - minPrice) * 0.1 || minPrice * 0.1;
 
   return (
-    <div className="w-full h-64 mt-4">
+    <div 
+      className="w-full h-64 mt-4" 
+      role="img" 
+      aria-label={`${productName || 'Ürün'} son 90 günlük fiyat değişim grafiği`}
+    >
       <ResponsiveContainer width="100%" height="100%">
         <LineChart data={chartData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
           <defs>

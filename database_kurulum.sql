@@ -31,6 +31,7 @@ CREATE TABLE products (
   reviews_count INT DEFAULT 0,
   is_trend BOOLEAN DEFAULT FALSE,
   specs JSONB, -- Teknik ozellikleri tutmak icin (Orn: {"Ekran": "6.7 inç", "RAM": "8GB"})
+  asin VARCHAR(20) UNIQUE, -- Amazon Standart Urun Numarasi (PA API ve Affiliate icin)
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 

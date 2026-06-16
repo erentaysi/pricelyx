@@ -2,6 +2,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import Link from 'next/link';
+import Image from 'next/image';
 import AICoach from "./components/AICoach";
 import { 
   Info, 
@@ -81,18 +82,13 @@ function Footer() {
         <div className="container mx-auto px-4">
             <div className="grid md:grid-cols-4 gap-12 mb-16">
                 <div className="col-span-1 md:col-span-1">
-                    <Link href="/" className="inline-block mb-6">
-                      <svg width="140" height="35" viewBox="0 0 200 50" xmlns="http://www.w3.org/2000/svg">
-                          <defs>
-                              <linearGradient id="footerLogoGradient" x1="0%" y1="0%" x2="100%" y2="0%">
-                                  <stop offset="0%" style={{stopColor: "#2E86AB", stopOpacity: 1}} />
-                                  <stop offset="100%" style={{stopColor: "#A23B72", stopOpacity: 1}} />
-                              </linearGradient>
-                          </defs>
-                          <path d="M 10 35 L 10 15 C 10 10 15 5 20 5 L 30 5 C 35 5 40 10 40 15 C 40 20 35 25 30 25 L 20 25 M 10 25 L 35 45" 
-                                stroke="url(#footerLogoGradient)" strokeWidth="3" fill="none" strokeLinecap="round" strokeLinejoin="round"/>
-                          <text x="45" y="32" fontFamily="'Inter', sans-serif" fontSize="26" fontWeight="900" fill="url(#footerLogoGradient)">Piinti</text>
-                      </svg>
+                    <Link href="/" className="inline-block mb-6 relative w-[140px] h-[45px]">
+                      <Image 
+                        src="/logo.png" 
+                        alt="Piinti Logo" 
+                        fill 
+                        className="object-contain filter brightness-0 invert opacity-90"
+                      />
                     </Link>
                     <p className="text-slate-400 text-sm leading-relaxed mb-8">
                       Milyonlarca ürünü anlık olarak analiz eden Piinti, alışveriş yolculuğunuzda size en doğru şeffaflığı sunar.
