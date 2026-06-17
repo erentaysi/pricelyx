@@ -16,7 +16,8 @@ import {
   Instagram,
   Twitter,
   Linkedin,
-  Facebook
+  Facebook,
+  BookOpen
 } from 'lucide-react';
 import Navbar from './components/Navbar';
 import GoogleAnalytics from './components/GoogleAnalytics';
@@ -106,6 +107,7 @@ function Footer() {
                         <li><Link href="/hakkimizda" className="text-slate-400 hover:text-white transition-colors flex items-center gap-3 text-sm underline-offset-4 hover:underline"><Info className="w-4 h-4" /> Hakkımızda</Link></li>
                         <li><Link href="/iletisim" className="text-slate-400 hover:text-white transition-colors flex items-center gap-3 text-sm underline-offset-4 hover:underline"><Mail className="w-4 h-4" /> İletişim</Link></li>
                         <li><Link href="/kariyer" className="text-slate-400 hover:text-white transition-colors flex items-center gap-3 text-sm underline-offset-4 hover:underline"><Briefcase className="w-4 h-4" /> Kariyer</Link></li>
+                        <li><Link href="/blog" className="text-slate-400 hover:text-white transition-colors flex items-center gap-3 text-sm underline-offset-4 hover:underline"><BookOpen className="w-4 h-4" /> Rehber & Blog</Link></li>
                     </ul>
                 </div>
                 

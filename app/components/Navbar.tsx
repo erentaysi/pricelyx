@@ -26,12 +26,13 @@ export default function Navbar() {
     return () => subscription.unsubscribe();
   }, []);
 
-  const navLinks = [
-    { name: "Ana Sayfa", href: "/" },
-    { name: "Tüm Ürünler", href: "/urunler" },
-    { name: "Kampanyalar", href: "/kampanyalar" },
-    { name: "Hakkımızda", href: "/hakkimizda" },
-  ];
+    const navLinks = [
+      { name: "Ana Sayfa", href: "/" },
+      { name: "Tüm Ürünler", href: "/urunler" },
+      { name: "Kampanyalar", href: "/kampanyalar" },
+      { name: "Rehber & Blog", href: "/blog" },
+      { name: "Hakkımızda", href: "/hakkimizda" },
+    ];
 
   return (
     <nav className="bg-white/80 backdrop-blur-md border-b border-slate-100 sticky top-0 z-50">
