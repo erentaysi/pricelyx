@@ -5,7 +5,7 @@ import CountdownTimer from '@/app/components/CountdownTimer';
 import { Tag, ExternalLink, CheckCircle2 } from 'lucide-react';
 import CopyButton from './CopyButton';
 
-export const dynamic = 'force-dynamic';
+export const revalidate = 3600;
 
 export default async function Kampanyalar() {
   // 1. İndirimli Ürünleri Çek
@@ -46,10 +46,30 @@ export default async function Kampanyalar() {
     .eq('is_active', true)
     .order('created_at', { ascending: false });
 
-  const activeCampaigns = affiliateCampaigns || [];
+  const now = new Date();
+  const activeCampaigns = (affiliateCampaigns || []).filter((c: any) => {
+    if (!c.date_end) return true;
+    return new Date(c.date_end) > now;
+  });
+
+  const schemaData = activeCampaigns.map((camp: any) => ({
+    "@context": "https://schema.org",
+    "@type": "Offer",
+    "name": camp.title,
+    "description": camp.description,
+    "url": "https://piinti.com/kampanyalar",
+    "seller": {
+      "@type": "Organization",
+      "name": camp.campaign_name
+    }
+  }));
 
   return (
     <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(schemaData) }}
+      />
       <section className="gradient-bg text-white py-20 relative overflow-hidden">
           <div className="absolute inset-0 bg-[url('/pattern.png')] opacity-10"></div>
           <div className="container mx-auto px-4 text-center relative z-10">
@@ -110,7 +130,7 @@ export default async function Kampanyalar() {
                           <div className="flex-1 bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 font-mono font-bold text-slate-700 text-center flex items-center justify-center tracking-widest uppercase truncate">
                             {camp.promo_code}
                           </div>
-                          <CopyButton code={camp.promo_code} />
+                          <CopyButton code={camp.promo_code} tracking_link={camp.tracking_link} />
                         </div>
                       ) : (
                         <div className="bg-slate-50 border border-slate-100 rounded-xl px-4 py-3 text-center text-sm font-medium text-slate-500 italic">

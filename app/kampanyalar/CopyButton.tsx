@@ -3,12 +3,18 @@
 import { useState } from 'react';
 import { Copy, Check } from 'lucide-react';
 
-export default function CopyButton({ code }: { code: string }) {
+export default function CopyButton({ code, tracking_link }: { code: string, tracking_link: string }) {
   const [copied, setCopied] = useState(false);
 
   const handleCopy = () => {
     navigator.clipboard.writeText(code);
     setCopied(true);
+    
+    // YENI: Arka planda Affiliate linkini tetikle (First Click kurali icin)
+    if (tracking_link) {
+      window.open(tracking_link, '_blank');
+    }
+
     setTimeout(() => setCopied(false), 2000);
   };
 
