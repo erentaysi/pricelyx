@@ -136,7 +136,12 @@ function Footer() {
             </div>
             
             <div className="border-t border-slate-800 pt-8 flex flex-col md:flex-row justify-between items-center gap-4">
-                <p className="text-slate-500 text-xs font-medium uppercase tracking-widest">&copy; 2026 Piinti - Engineered for Excellence</p>
+                <div className="flex flex-col gap-1">
+                  <p className="text-slate-500 text-xs font-medium uppercase tracking-widest">&copy; 2026 Piinti - Engineered for Excellence</p>
+                  <p className="text-slate-600 text-[10px] uppercase tracking-wider">
+                    Amazon Associates ve diğer affiliate programları katılımcısı olarak, nitelikli satın alımlardan komisyon kazanabiliriz.
+                  </p>
+                </div>
                 <div className="flex gap-6">
                   <span className="text-[10px] text-slate-600 font-bold tracking-tighter uppercase border border-slate-700 px-2 py-1 rounded">SSL Secure</span>
                   <span className="text-[10px] text-slate-600 font-bold tracking-tighter uppercase border border-slate-700 px-2 py-1 rounded">256-Bit Cryptography</span>
