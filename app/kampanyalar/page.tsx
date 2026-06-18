@@ -2,11 +2,13 @@ import Link from 'next/link';
 import { supabase } from '@/lib/supabase';
 import ProductCard from '@/app/components/ProductCard';
 import CountdownTimer from '@/app/components/CountdownTimer';
+import { Tag, ExternalLink, CheckCircle2 } from 'lucide-react';
+import CopyButton from './CopyButton';
 
 export const dynamic = 'force-dynamic';
 
 export default async function Kampanyalar() {
-  // Veritabanından gerçek indirimli ürünleri çek (original_price > price)
+  // 1. İndirimli Ürünleri Çek
   const { data: discountedProducts } = await supabase
     .from('products')
     .select(`
@@ -17,7 +19,6 @@ export default async function Kampanyalar() {
     `)
     .limit(12);
 
-  // Gelen ürünleri filtrele ve indirim oranı hesapla
   let realDeals = [];
   if (discountedProducts) {
     realDeals = discountedProducts.map((p: any) => {
@@ -35,8 +36,17 @@ export default async function Kampanyalar() {
       };
     }).filter(p => p.calculatedDiscount > 0)
       .sort((a, b) => b.calculatedDiscount - a.calculatedDiscount)
-      .slice(0, 8); // En yüksek indirimli 8 ürün
+      .slice(0, 8);
   }
+
+  // 2. Affiliate Kampanya ve Kuponları Çek
+  const { data: affiliateCampaigns } = await supabase
+    .from('affiliate_campaigns')
+    .select('*')
+    .eq('is_active', true)
+    .order('created_at', { ascending: false });
+
+  const activeCampaigns = affiliateCampaigns || [];
 
   return (
     <>
@@ -51,17 +61,75 @@ export default async function Kampanyalar() {
       <section className="py-8 bg-white border-b border-slate-100 shadow-sm sticky top-0 z-40">
           <div className="container mx-auto px-4">
               <div className="flex gap-4 overflow-x-auto pb-2 scrollbar-hide">
-                  <Link href="/urunler" className="px-6 py-3 bg-red-500 hover:bg-red-600 text-white rounded-xl font-bold whitespace-nowrap shadow-md shadow-red-500/20 transition-all flex items-center gap-2">🔥 Tüm İndirimler</Link>
+                  <Link href="#kuponlar" className="px-6 py-3 bg-purple-50 hover:bg-purple-100 text-purple-600 rounded-xl font-bold whitespace-nowrap transition-all flex items-center gap-2"><Tag className="w-4 h-4"/> Aktif Kuponlar</Link>
+                  <Link href="#urunler" className="px-6 py-3 bg-red-500 hover:bg-red-600 text-white rounded-xl font-bold whitespace-nowrap shadow-md shadow-red-500/20 transition-all flex items-center gap-2">🔥 Flaş İndirimler</Link>
                   <Link href="/urunler?cat=akilli-telefon" className="px-6 py-3 bg-blue-50 text-blue-600 rounded-xl font-bold whitespace-nowrap hover:bg-blue-100 transition-colors flex items-center gap-2">📱 Telefonlar</Link>
                   <Link href="/urunler?cat=bilgisayar-laptop" className="px-6 py-3 bg-indigo-50 text-indigo-600 rounded-xl font-bold whitespace-nowrap hover:bg-indigo-100 transition-colors flex items-center gap-2">💻 Laptop & PC</Link>
-                  <Link href="/urunler?cat=ev-yasam" className="px-6 py-3 bg-green-50 text-green-600 rounded-xl font-bold whitespace-nowrap hover:bg-green-100 transition-colors flex items-center gap-2">🏠 Ev & Yaşam</Link>
-                  <Link href="/urunler?cat=moda-giyim" className="px-6 py-3 bg-pink-50 text-pink-600 rounded-xl font-bold whitespace-nowrap hover:bg-pink-100 transition-colors flex items-center gap-2">👕 Moda</Link>
-                  <Link href="/urunler?cat=kozmetik" className="px-6 py-3 bg-rose-50 text-rose-600 rounded-xl font-bold whitespace-nowrap hover:bg-rose-100 transition-colors flex items-center gap-2">💄 Kozmetik</Link>
               </div>
           </div>
       </section>
 
-      <section className="py-16 bg-gray-50">
+      <section id="kuponlar" className="py-16 bg-white border-b border-slate-100">
+        <div className="container mx-auto px-4">
+          <div className="flex flex-col md:flex-row items-center justify-between mb-12 gap-4">
+            <div>
+              <h2 className="text-3xl md:text-4xl font-black tracking-tight flex items-center gap-3">
+                <Tag className="w-8 h-8 text-purple-600" /> Mağaza Kuponları & Fırsatlar
+              </h2>
+              <p className="text-slate-500 mt-2 font-medium text-lg">Anlaşmalı markalarımızın özel indirim kodları ve kampanyaları.</p>
+            </div>
+          </div>
+
+          {activeCampaigns.length === 0 ? (
+            <div className="text-center py-16 bg-slate-50 rounded-3xl border border-dashed border-slate-200">
+              <p className="text-slate-500 font-medium">Şu an için aktif bir indirim kuponu bulunmuyor.</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {activeCampaigns.map((camp: any) => {
+                const isDecathlon = camp.campaign_name.toLowerCase().includes('decathlon');
+                const hasPromo = camp.promo_code && !isDecathlon;
+
+                return (
+                  <div key={camp.id} className="bg-white rounded-3xl border border-slate-200 p-6 shadow-sm hover:shadow-xl transition-all duration-300 flex flex-col group relative overflow-hidden">
+                    <div className="absolute top-0 right-0 bg-slate-900 text-white text-xs font-black px-4 py-2 rounded-bl-2xl uppercase tracking-widest z-10">
+                      {camp.campaign_name}
+                    </div>
+                    <div className="mb-6 mt-4">
+                      <h3 className="text-xl font-black text-slate-900 mb-2 leading-tight group-hover:text-primary transition-colors pr-12">{camp.title}</h3>
+                      <p className="text-slate-500 text-sm line-clamp-2">{camp.description}</p>
+                    </div>
+                    {camp.discount_info && (
+                      <div className="inline-flex items-center gap-2 bg-emerald-50 text-emerald-700 font-bold px-4 py-2 rounded-xl text-sm mb-6 self-start">
+                        <CheckCircle2 className="w-4 h-4" /> {camp.discount_info} İndirim
+                      </div>
+                    )}
+                    <div className="mt-auto pt-6 border-t border-slate-100 flex flex-col gap-3">
+                      {hasPromo ? (
+                        <div className="flex gap-2">
+                          <div className="flex-1 bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 font-mono font-bold text-slate-700 text-center flex items-center justify-center tracking-widest uppercase truncate">
+                            {camp.promo_code}
+                          </div>
+                          <CopyButton code={camp.promo_code} />
+                        </div>
+                      ) : (
+                        <div className="bg-slate-50 border border-slate-100 rounded-xl px-4 py-3 text-center text-sm font-medium text-slate-500 italic">
+                          İndirim linke tanımlıdır, koda gerek yok.
+                        </div>
+                      )}
+                      <a href={camp.tracking_link} target="_blank" rel="noopener noreferrer" className="w-full bg-slate-900 hover:bg-primary text-white font-black py-4 rounded-xl flex items-center justify-center gap-2 transition-colors uppercase tracking-widest text-sm shadow-lg shadow-slate-900/10">
+                        Kampanyaya Git <ExternalLink className="w-4 h-4" />
+                      </a>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      </section>
+
+      <section id="urunler" className="py-16 bg-gray-50">
           <div className="container mx-auto px-4">
               <div className="bg-gradient-to-r from-red-600 via-orange-500 to-amber-500 rounded-[2rem] p-8 md:p-12 text-white mb-12 shadow-2xl shadow-orange-500/20 relative overflow-hidden group">
                   <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full blur-3xl group-hover:scale-150 transition-transform duration-700"></div>
@@ -83,7 +151,7 @@ export default async function Kampanyalar() {
                 </div>
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                    {realDeals.map((p: any, idx: number) => (
+                    {realDeals.map((p: any) => (
                         <div key={p.id} className="relative group">
                             <div className="absolute top-4 left-4 z-20 bg-red-500 text-white text-[11px] font-black px-4 py-1.5 rounded-full shadow-lg shadow-red-500/30 uppercase tracking-widest flex items-center gap-1 animate-pulse">
                                 %{p.calculatedDiscount} İNDİRİM
@@ -93,67 +161,6 @@ export default async function Kampanyalar() {
                     ))}
                 </div>
               )}
-          </div>
-      </section>
-
-      <section className="py-20 bg-white">
-          <div className="container mx-auto px-4">
-              <h2 className="text-3xl md:text-4xl font-black text-gray-900 mb-12 tracking-tight text-center">🛍️ Mağazalardan Özel Fırsatlar</h2>
-              <div className="grid md:grid-cols-3 gap-8">
-                  {/* Trendyol */}
-                  <div className="bg-white border border-slate-100 rounded-3xl p-8 hover:shadow-2xl hover:shadow-orange-500/10 hover:border-orange-200 transition-all duration-500 group flex flex-col h-full">
-                      <div className="flex items-center gap-6 mb-8">
-                          <div className="w-16 h-16 bg-orange-50 text-orange-500 rounded-2xl flex items-center justify-center text-3xl font-black shadow-sm group-hover:scale-110 transition-transform">TY</div>
-                          <div>
-                              <h3 className="text-2xl font-black text-gray-900 tracking-tight">Trendyol</h3>
-                              <p className="text-orange-500 font-bold text-sm">Ücretsiz Kargo Fırsatı</p>
-                          </div>
-                      </div>
-                      <ul className="space-y-4 mb-8 flex-1">
-                          <li className="flex items-start gap-3"><span className="bg-green-100 text-green-600 w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold mt-0.5">✓</span><span className="text-gray-600 font-medium">Seçili elektronikte %30'a varan indirim</span></li>
-                          <li className="flex items-start gap-3"><span className="bg-green-100 text-green-600 w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold mt-0.5">✓</span><span className="text-gray-600 font-medium">Moda kategorisinde 3 Al 2 Öde</span></li>
-                      </ul>
-                      <Link href="/urunler" className="block w-full bg-slate-900 hover:bg-orange-500 text-white text-center py-4 rounded-2xl font-black uppercase tracking-widest text-[11px] transition-colors shadow-lg">
-                          Trendyol Ürünleri
-                      </Link>
-                  </div>
-                  
-                  {/* Hepsiburada */}
-                  <div className="bg-white border border-slate-100 rounded-3xl p-8 hover:shadow-2xl hover:shadow-orange-600/10 hover:border-orange-200 transition-all duration-500 group flex flex-col h-full">
-                      <div className="flex items-center gap-6 mb-8">
-                          <div className="w-16 h-16 bg-orange-50 text-orange-600 rounded-2xl flex items-center justify-center text-3xl font-black shadow-sm group-hover:scale-110 transition-transform">HB</div>
-                          <div>
-                              <h3 className="text-2xl font-black text-gray-900 tracking-tight">Hepsiburada</h3>
-                              <p className="text-orange-600 font-bold text-sm">Premium Avantajları</p>
-                          </div>
-                      </div>
-                      <ul className="space-y-4 mb-8 flex-1">
-                          <li className="flex items-start gap-3"><span className="bg-green-100 text-green-600 w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold mt-0.5">✓</span><span className="text-gray-600 font-medium">Premium üyelere özel ekstra indirimler</span></li>
-                          <li className="flex items-start gap-3"><span className="bg-green-100 text-green-600 w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold mt-0.5">✓</span><span className="text-gray-600 font-medium">Hepsipay ile anında %5 nakit iade</span></li>
-                      </ul>
-                      <Link href="/urunler" className="block w-full bg-slate-900 hover:bg-orange-600 text-white text-center py-4 rounded-2xl font-black uppercase tracking-widest text-[11px] transition-colors shadow-lg">
-                          Hepsiburada Ürünleri
-                      </Link>
-                  </div>
-
-                  {/* Amazon */}
-                  <div className="bg-white border border-slate-100 rounded-3xl p-8 hover:shadow-2xl hover:shadow-blue-500/10 hover:border-blue-200 transition-all duration-500 group flex flex-col h-full">
-                      <div className="flex items-center gap-6 mb-8">
-                          <div className="w-16 h-16 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center text-3xl font-black shadow-sm group-hover:scale-110 transition-transform">AMZ</div>
-                          <div>
-                              <h3 className="text-2xl font-black text-gray-900 tracking-tight">Amazon Türkiye</h3>
-                              <p className="text-blue-600 font-bold text-sm">Gülümseten Fırsatlar</p>
-                          </div>
-                      </div>
-                      <ul className="space-y-4 mb-8 flex-1">
-                          <li className="flex items-start gap-3"><span className="bg-green-100 text-green-600 w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold mt-0.5">✓</span><span className="text-gray-600 font-medium">Prime üyelerine bedava ve hızlı kargo</span></li>
-                          <li className="flex items-start gap-3"><span className="bg-green-100 text-green-600 w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold mt-0.5">✓</span><span className="text-gray-600 font-medium">Yurt dışı ürünlerde dev indirimler</span></li>
-                      </ul>
-                      <Link href="/urunler" className="block w-full bg-slate-900 hover:bg-blue-600 text-white text-center py-4 rounded-2xl font-black uppercase tracking-widest text-[11px] transition-colors shadow-lg">
-                          Amazon Fırsatları
-                      </Link>
-                  </div>
-              </div>
           </div>
       </section>
       
