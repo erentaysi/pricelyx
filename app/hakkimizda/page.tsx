@@ -12,6 +12,7 @@ export const revalidate = 3600;
 export default async function Hakkimizda() {
   const { count: productCount } = await supabase.from('products').select('*', { count: 'exact', head: true });
   const { count: vendorCount } = await supabase.from('vendors').select('*', { count: 'exact', head: true });
+  const { count: priceCount } = await supabase.from('product_prices').select('*', { count: 'exact', head: true });
 
   return (
     <>
@@ -91,8 +92,8 @@ export default async function Hakkimizda() {
                           <div className="text-white/90">Mağaza</div>
                       </div>
                       <div>
-                          <div className="text-5xl font-bold mb-2">%40</div>
-                          <div className="text-white/90">Ortalama Tasarruf</div>
+                          <div className="text-5xl font-bold mb-2">{priceCount || 0}+</div>
+                          <div className="text-white/90">Fiyat Karşılaştırması</div>
                       </div>
                   </div>
               </div>
