@@ -5,7 +5,14 @@ export const metadata: Metadata = {
   description: "Piinti hakkında bilgi edinin. Türkiye'nin güvenilir fiyat karşılaştırma platformu."
 };
 
-export default function Hakkimizda() {
+import { supabase } from '@/lib/supabase';
+
+export const revalidate = 3600;
+
+export default async function Hakkimizda() {
+  const { count: productCount } = await supabase.from('products').select('*', { count: 'exact', head: true });
+  const { count: vendorCount } = await supabase.from('vendors').select('*', { count: 'exact', head: true });
+
   return (
     <>
       {/* Hero */}
@@ -76,11 +83,11 @@ export default function Hakkimizda() {
                   <h2 className="text-3xl font-bold mb-8 text-center relative z-10">Rakamlarla Piinti</h2>
                   <div className="grid md:grid-cols-3 gap-8 text-center relative z-10">
                       <div>
-                          <div className="text-5xl font-bold mb-2">500K+</div>
+                          <div className="text-5xl font-bold mb-2">{productCount || 0}+</div>
                           <div className="text-white/90">Ürün</div>
                       </div>
                       <div>
-                          <div className="text-5xl font-bold mb-2">50+</div>
+                          <div className="text-5xl font-bold mb-2">{vendorCount || 0}+</div>
                           <div className="text-white/90">Mağaza</div>
                       </div>
                       <div>
@@ -102,12 +109,13 @@ export default function Hakkimizda() {
                           <a href="mailto:info@piinti.com" className="text-primary hover:underline text-lg font-medium">info@piinti.com</a>
                       </div>
                       <div className="flex items-center gap-4">
-                          <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center text-xl">📱</div>
-                          <span className="text-gray-700 text-lg font-medium">+90 850 000 00 00</span>
-                      </div>
-                      <div className="flex items-center gap-4">
-                          <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center text-xl">📍</div>
-                          <span className="text-gray-700 text-lg font-medium">İstanbul, Türkiye</span>
+                          <div className="w-12 h-12 bg-primary/10 text-primary flex items-center justify-center rounded-xl">
+                              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+                          </div>
+                          <div>
+                              <div className="font-semibold text-gray-800">Ofis Adresi</div>
+                              <div className="text-gray-500">Levent, Büyükdere Cd. No:199, 34394 Şişli/İstanbul</div>
+                          </div>
                       </div>
                   </div>
               </div>

@@ -56,9 +56,18 @@ export default async function UrunlerPage({ searchParams }: { searchParams: { q?
   const { data: products } = await query;
   const filteredProducts = products || [];
 
-  // Get all categories and brands for the sidebar
-  const { data: categoriesData } = await supabase.from('categories').select('name, slug');
-  const { data: brandsData } = await supabase.from('brands').select('name');
+  // Get all categories and brands for the sidebar (SADECE URUNU OLANLAR)
+  const { data: productsForFilters } = await supabase.from('products').select('categories(name, slug), brands(name)');
+  
+  const categoriesData = Array.from(new Map((productsForFilters || [])
+    .filter((p: any) => p.categories)
+    .map((p: any) => [Array.isArray(p.categories) ? p.categories[0].slug : p.categories.slug, Array.isArray(p.categories) ? p.categories[0] : p.categories])
+  ).values());
+
+  const brandsData = Array.from(new Map((productsForFilters || [])
+    .filter((p: any) => p.brands)
+    .map((p: any) => [Array.isArray(p.brands) ? p.brands[0].name : p.brands.name, Array.isArray(p.brands) ? p.brands[0] : p.brands])
+  ).values());
 
   return (
     <div className="max-w-7xl mx-auto px-6 py-12 flex flex-col md:flex-row gap-8">
