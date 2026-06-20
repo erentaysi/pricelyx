@@ -157,7 +157,11 @@ function detectCategory(title) {
   
   if ((t.includes('telefon') || t.includes('iphone') || t.includes('galaxy s') || t.includes('galaxy a') || t.includes('poco') || t.includes('pixel')) && !t.includes('kilif') && !t.includes('kablo')) 
     return 'akilli-telefon';
-  if (t.includes('supurge') || t.includes('airfryer') || t.includes('dyson') || t.includes('robot') || t.includes('kahve makine') || t.includes('cay makine') || t.includes('mikser') || t.includes('utu'))
+  if (t.includes('playstation') || t.includes('xbox') || t.includes('nintendo') || t.includes('konsol') || t.includes('dualsense') || t.includes('gamepad'))
+    return 'oyun-konsollari';
+  if (t.includes('kosu') || t.includes('fitness') || t.includes('halter') || t.includes('yoga') || t.includes('spor') || t.includes('bisiklet') || t.includes('dambil') || t.includes('pilates'))
+    return 'spor-outdoor';
+  if (t.includes('supurge') || t.includes('airfryer') || t.includes('dyson') || t.includes('robot') || t.includes('kahve makine') || t.includes('cay makine') || t.includes('mikser') || t.includes('utu') || t.includes('blender'))
     return 'ev-yasam';
   if (t.includes('laptop') || t.includes('bilgisayar') || t.includes('macbook') || t.includes('notebook') || t.includes('monitor'))
     return 'bilgisayar-laptop';

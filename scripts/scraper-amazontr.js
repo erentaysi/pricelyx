@@ -12,9 +12,11 @@ async function scrapeAmazon() {
 
     const searchQueries = [
         'iphone', 'dyson', 'robot süpürge', 'kulaklık', 
-        'macbook', 'airpods', 'playstation', 'airfryer', 
+        'macbook', 'airpods', 'playstation 5', 'airfryer', 
         'kahve makinesi', 'parfüm', 'tıraş makinesi', 
-        'samsung galaxy', 'akıllı saat'
+        'samsung galaxy', 'akıllı saat', 'koşu bandı', 
+        'fitness', 'halter seti', 'yoga matı', 'xbox', 
+        'nintendo switch', 'blender', 'ütü'
     ];
     let allProducts = [];
 
@@ -36,7 +38,7 @@ async function scrapeAmazon() {
                 const cards = document.querySelectorAll('.s-result-item[data-component-type="s-search-result"]');
                 const results = [];
                 cards.forEach((card, i) => {
-                    if (i >= 20) return; 
+                    if (i >= 30) return; 
                     
                     const aTag = card.querySelector('a.a-link-normal');
                     const imgTag = card.querySelector('img.s-image');
