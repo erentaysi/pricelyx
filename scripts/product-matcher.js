@@ -47,10 +47,7 @@ function normalizeTitle(title) {
   // Parantez içindeki gereksiz bilgileri kaldır: (Apple Türkiye Garantili)
   t = t.replace(/\([^)]*\)/g, '');
   
-  // Tire sonrası açıklamaları kaldır: " - Apple Türkiye Garantili"
-  t = t.replace(/\s*-\s*[a-z].*$/g, '');
-  
-  // Gürültü kelimeleri temizle
+  // Gereksiz kelimeleri siltemizle
   for (const word of NOISE_WORDS) {
     const w = word.replace(/[çğıöşüÇĞİÖŞÜ]/g, m => TR_MAP[m] || m);
     t = t.replace(new RegExp('\\b' + w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\b', 'gi'), '');
@@ -155,20 +152,22 @@ function extractBrand(title) {
 function detectCategory(title) {
   const t = normalizeTitle(title);
   
+  // Kitap/Kılavuz her şeyden önce kontrol edilmeli
+  if (t.includes('kitap') || t.includes('roman') || t.includes('nuls') || t.includes('manuel') || t.includes('guide') || t.includes('dergi') || t.split(' ').includes('book'))
+    return 'kitap-hobi';
+
   if ((t.includes('telefon') || t.includes('iphone') || t.includes('galaxy s') || t.includes('galaxy a') || t.includes('poco') || t.includes('pixel')) && !t.includes('kilif') && !t.includes('kablo')) 
     return 'akilli-telefon';
-  if (t.includes('playstation') || t.includes('xbox') || t.includes('nintendo') || t.includes('konsol') || t.includes('dualsense') || t.includes('gamepad'))
+  if (t.includes('playstation') || t.includes('xbox') || t.includes('nintendo') || t.includes('konsol') || t.includes('dualsense') || t.includes('gamepad') || t.includes('joy con'))
     return 'oyun-konsollari';
   if (t.includes('kosu') || t.includes('fitness') || t.includes('halter') || t.includes('yoga') || t.includes('spor') || t.includes('bisiklet') || t.includes('dambil') || t.includes('pilates'))
     return 'spor-outdoor';
-  if (t.includes('supurge') || t.includes('airfryer') || t.includes('dyson') || t.includes('robot') || t.includes('kahve makine') || t.includes('cay makine') || t.includes('mikser') || t.includes('utu') || t.includes('blender'))
+  if (t.includes('supurge') || t.includes('airfryer') || t.includes('dyson') || t.includes('robot') || t.includes('kahve makine') || t.includes('cay makine') || t.includes('mikser') || t.includes('utu') || t.includes('blender') || t.includes('kahve'))
     return 'ev-yasam';
-  if (t.includes('laptop') || t.includes('bilgisayar') || t.includes('macbook') || t.includes('notebook') || t.includes('monitor'))
+  if (t.includes('laptop') || t.includes('bilgisayar') || t.includes('macbook') || t.includes('notebook') || t.includes('monitor') || t.includes('mouse') || t.includes('klavye'))
     return 'bilgisayar-laptop';
-  if (t.includes('parfum') || t.includes('tiras') || t.includes('epilasyon') || t.includes('kurutma') || t.includes('sac duzlestirici'))
-    return 'kozmetik-kisisel-bakim';
-  if (t.includes('kitap') || t.includes('roman'))
-    return 'kitap';
+  if (t.includes('parfum') || t.includes('tiras') || t.includes('epilasyon') || t.includes('kurutma') || t.includes('sac duzlestirici') || t.includes('kozmetik'))
+    return 'kozmetik';
     
   return 'elektronik'; // default
 }

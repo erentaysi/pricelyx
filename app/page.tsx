@@ -43,15 +43,42 @@ export default async function Home() {
 
   const productsList = allProducts || [];
 
+  // Çeşitlilik sağlayan fonksiyon (Aynı kategoriden max 2 ürün alır)
+  const getDiverseProducts = (pool: any[], max: number) => {
+    const selected: any[] = [];
+    const categoryCounts: Record<string, number> = {};
+    
+    // İlk tur: Her kategoriden max 2 ürün
+    for (const p of pool) {
+      if (selected.length >= max) break;
+      const catId = String(p.category_id || 'unknown');
+      if ((categoryCounts[catId] || 0) < 2) {
+        selected.push(p);
+        categoryCounts[catId] = (categoryCounts[catId] || 0) + 1;
+      }
+    }
+    
+    // İkinci tur: Eğer max sayıya ulaşılamadıysa, kalanlardan tamamla
+    if (selected.length < max) {
+        for (const p of pool) {
+            if (selected.length >= max) break;
+            if (!selected.includes(p)) selected.push(p);
+        }
+    }
+    return selected;
+  };
+
   // Fiyatı düşenler
-  const discountedProducts = productsList.filter(p => {
+  const discountedPool = productsList.filter(p => {
     if (!p.product_prices || p.product_prices.length === 0) return false;
     const priceObj = Array.isArray(p.product_prices) ? p.product_prices[0] : p.product_prices;
     return priceObj.price < priceObj.original_price;
-  }).slice(0, 8);
+  });
+  const discountedProducts = getDiverseProducts(discountedPool, 8);
 
   // Günün Trendleri
-  const trendProducts = productsList.filter(p => p.is_trend).slice(0, 8);
+  const trendPool = productsList.filter(p => p.is_trend);
+  const trendProducts = getDiverseProducts(trendPool, 8);
 
   // Kategorilere göre dinamik bölümler (En az 4 ürünü olanlar)
   const dynamicSections = [];
