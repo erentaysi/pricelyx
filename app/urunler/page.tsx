@@ -37,7 +37,7 @@ export default async function UrunlerPage({ searchParams }: { searchParams: { q?
   // Build Supabase query
   let query = supabase.from('products').select(`
     *,
-    brands!inner(name),
+    brands${brand ? '!inner' : ''}(name),
     categories!inner(name, slug),
     product_prices(price),
     price_history(price, recorded_at)
@@ -81,11 +81,12 @@ export default async function UrunlerPage({ searchParams }: { searchParams: { q?
 
   const usedCategoryIds = new Set((productsForFilters || []).map((p: any) => p.category_id));
   const activeSubs = (allCategories || []).filter(c => usedCategoryIds.has(c.id) && c.parent_id !== null);
-  const activeMainIds = new Set(activeSubs.map(c => c.parent_id));
-  const activeMains = (allCategories || []).filter(c => activeMainIds.has(c.id));
+  
+  // Get ALL main categories so they always show in the sidebar (except Piinti Market)
+  const allMains = (allCategories || []).filter(c => c.parent_id === null && c.name !== 'Piinti Market');
 
   // Build hierarchical structure
-  const categoriesData = activeMains.map(main => ({
+  const categoriesData = allMains.map(main => ({
     ...main,
     subs: activeSubs.filter(sub => sub.parent_id === main.id)
   }));
