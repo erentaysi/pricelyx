@@ -1,6 +1,6 @@
 import { notFound } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
-import { extractIdFromSlug } from '@/lib/utils';
+import { extractIdFromSlug, appendAffiliateTag } from '@/lib/utils';
 import SearchForm from '@/app/components/SearchForm';
 import Link from 'next/link';
 import PriceHistoryChart from '@/app/components/PriceHistoryChart';
@@ -236,7 +236,7 @@ export default async function UrunDetay({ params }: { params: { id: string } }) 
               <div className="flex flex-col items-center gap-4 w-full sm:w-auto">
                 <PriceAlertModal productId={product.id} productTitle={product.title} currentPrice={lowestPrice} />
                 {sortedPrices.length > 0 && sortedPrices[0].product_url && sortedPrices[0].product_url.startsWith('http') && (
-                  <a href={sortedPrices[0].product_url} target="_blank" rel="noopener noreferrer" className="bg-white hover:bg-slate-100 text-slate-900 font-black h-14 px-10 rounded-2xl shadow-xl transition-all duration-300 hover:-translate-y-1 w-full sm:w-auto flex items-center justify-center gap-3 group">
+                  <a href={appendAffiliateTag(sortedPrices[0].product_url, process.env.AMAZON_ASSOCIATE_TAG)} target="_blank" rel="noopener noreferrer" className="bg-white hover:bg-slate-100 text-slate-900 font-black h-14 px-10 rounded-2xl shadow-xl transition-all duration-300 hover:-translate-y-1 w-full sm:w-auto flex items-center justify-center gap-3 group">
                     Mağazaya İlerle <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
                   </a>
                 )}
@@ -333,7 +333,7 @@ export default async function UrunDetay({ params }: { params: { id: string } }) 
                     <div className="flex flex-col items-end gap-3 text-right">
                        <span className="text-3xl font-black text-slate-900">{trPrice(storeConfig.price)}</span>
                        {storeConfig.product_url && storeConfig.product_url.startsWith('http') ? (
-                         <a href={storeConfig.product_url} target="_blank" rel="noopener noreferrer" className="text-xs font-black bg-slate-900 hover:bg-primary text-white px-8 py-4 rounded-xl transition-all duration-300 shadow-xl shadow-slate-900/10 w-full md:w-auto text-center uppercase tracking-widest">
+                         <a href={appendAffiliateTag(storeConfig.product_url, process.env.AMAZON_ASSOCIATE_TAG)} target="_blank" rel="noopener noreferrer" className="text-xs font-black bg-slate-900 hover:bg-primary text-white px-8 py-4 rounded-xl transition-all duration-300 shadow-xl shadow-slate-900/10 w-full md:w-auto text-center uppercase tracking-widest">
                            Mağazaya İlerle
                          </a>
                        ) : (

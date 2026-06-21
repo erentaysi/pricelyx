@@ -38,3 +38,16 @@ export function extractIdFromSlug(slugId: string): string {
     // fallback: sondan 36 karakteri dene (UUID formatında değilse bile)
     return slugId.length > 36 ? slugId.slice(-36) : slugId;
 }
+
+export function appendAffiliateTag(url: string, tag: string = 'piinti-21'): string {
+  if (!url || !url.startsWith('http')) return url;
+  try {
+    const parsedUrl = new URL(url);
+    if (parsedUrl.hostname.includes('amazon.')) {
+      parsedUrl.searchParams.set('tag', tag);
+    }
+    return parsedUrl.toString();
+  } catch (e) {
+    return url;
+  }
+}
