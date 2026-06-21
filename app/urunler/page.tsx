@@ -31,8 +31,8 @@ export async function generateMetadata({ searchParams }: { searchParams: { q?: s
   };
 }
 
-export default async function UrunlerPage({ searchParams }: { searchParams: { q?: string, cat?: string, brand?: string } }) {
-  const { q, cat, brand } = searchParams;
+export default async function UrunlerPage({ searchParams }: { searchParams: { q?: string, cat?: string, brand?: string, min_price?: string, max_price?: string } }) {
+  const { q, cat, brand, min_price, max_price } = searchParams;
 
   // Build Supabase query
   let query = supabase.from('products').select(`
@@ -54,20 +54,41 @@ export default async function UrunlerPage({ searchParams }: { searchParams: { q?
   }
 
   const { data: products } = await query;
-  const filteredProducts = products || [];
+  let filteredProducts = products || [];
 
-  // Get all categories and brands for the sidebar (SADECE URUNU OLANLAR)
-  const { data: productsForFilters } = await supabase.from('products').select('categories(name, slug), brands(name)');
-  
-  const categoriesData = Array.from(new Map((productsForFilters || [])
-    .filter((p: any) => p.categories)
-    .map((p: any) => [Array.isArray(p.categories) ? p.categories[0].slug : p.categories.slug, Array.isArray(p.categories) ? p.categories[0] : p.categories])
-  ).values());
+  // Client-side filtering for price because price_history is a joined array
+  if (min_price || max_price) {
+    const min = min_price ? parseFloat(min_price) : 0;
+    const max = max_price ? parseFloat(max_price) : Infinity;
+    filteredProducts = filteredProducts.filter((p: any) => {
+      const priceStr = p.product_prices?.[0]?.price || p.price_history?.[0]?.price;
+      const currentPrice = priceStr ? parseFloat(priceStr.toString().replace(/[^0-9.]/g, '')) : 0;
+      return currentPrice >= min && currentPrice <= max;
+    });
+  }
+
+  // Get all categories to build hierarchy
+  const { data: allCategories } = await supabase.from('categories').select('*');
+  const { data: productsForFilters } = await supabase.from('products').select('category_id, brands(name)');
 
   const brandsData = Array.from(new Map((productsForFilters || [])
     .filter((p: any) => p.brands)
-    .map((p: any) => [Array.isArray(p.brands) ? p.brands[0].name : p.brands.name, Array.isArray(p.brands) ? p.brands[0] : p.brands])
+    .map((p: any) => {
+      const b = Array.isArray(p.brands) ? p.brands[0] : p.brands;
+      return [b.name, b];
+    })
   ).values());
+
+  const usedCategoryIds = new Set((productsForFilters || []).map((p: any) => p.category_id));
+  const activeSubs = (allCategories || []).filter(c => usedCategoryIds.has(c.id) && c.parent_id !== null);
+  const activeMainIds = new Set(activeSubs.map(c => c.parent_id));
+  const activeMains = (allCategories || []).filter(c => activeMainIds.has(c.id));
+
+  // Build hierarchical structure
+  const categoriesData = activeMains.map(main => ({
+    ...main,
+    subs: activeSubs.filter(sub => sub.parent_id === main.id)
+  }));
 
   return (
     <div className="max-w-7xl mx-auto px-6 py-12 flex flex-col md:flex-row gap-8">
@@ -78,6 +99,8 @@ export default async function UrunlerPage({ searchParams }: { searchParams: { q?
         currentCat={cat} 
         currentBrand={brand} 
         currentQ={q}
+        currentMinPrice={min_price}
+        currentMaxPrice={max_price}
       />
 
       {/* Product List */}
