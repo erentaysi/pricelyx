@@ -39,7 +39,7 @@ export function extractIdFromSlug(slugId: string): string {
     return slugId.length > 36 ? slugId.slice(-36) : slugId;
 }
 
-export function appendAffiliateTag(url: string, tag: string = 'piinti-21'): string {
+export function appendAffiliateTag(url: string, tag: string = 'piinti21-21'): string {
   if (!url || !url.startsWith('http')) return url;
   try {
     const parsedUrl = new URL(url);
