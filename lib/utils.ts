@@ -39,12 +39,15 @@ export function extractIdFromSlug(slugId: string): string {
     return slugId.length > 36 ? slugId.slice(-36) : slugId;
 }
 
-export function appendAffiliateTag(url: string, tag: string = 'piinti21-21'): string {
+export function appendAffiliateTag(url: string, tag?: string): string {
+  // Vercel'deki eski environment variable ('piinti-21') gelirse bunu zorla 'piinti21-21' ile değiştiriyoruz
+  const finalTag = (tag && tag !== 'piinti-21' && tag !== 'mock-20') ? tag : 'piinti21-21';
+  
   if (!url || !url.startsWith('http')) return url;
   try {
     const parsedUrl = new URL(url);
     if (parsedUrl.hostname.includes('amazon.')) {
-      parsedUrl.searchParams.set('tag', tag);
+      parsedUrl.searchParams.set('tag', finalTag);
     }
     return parsedUrl.toString();
   } catch (e) {
