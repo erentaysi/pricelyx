@@ -1,0 +1,132 @@
+{
+  "name": "Piinti Otomatik Blog Üretimi",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 2 * * *"
+            }
+          ]
+        }
+      },
+      "name": "Hergün 02:00",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1,
+      "position": [
+        250,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT p.title, p.slug, c.name as category,\n       p.current_price, p.previous_price,\n       ((p.previous_price - p.current_price) / p.previous_price * 100) as discount_pct\nFROM products p\nLEFT JOIN categories c ON p.category_id = c.id\nWHERE p.updated_at > NOW() - INTERVAL '24 hours'\n  AND p.current_price < p.previous_price\nORDER BY discount_pct DESC\nLIMIT 1;"
+      },
+      "name": "Supabase - Fiyatı Düşenleri Çek",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.1,
+      "position": [
+        450,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "model": "claude-3-5-sonnet-20240620",
+        "messages": {
+          "messageValues": [
+            {
+              "content": "Aşağıdaki ürün verilerini kullanarak Piinti.com için SEO optimizeli Türkçe blog yazısı yaz.\n\nÜrün: {{$json.title}}\nKategori: {{$json.category}}  \nEski fiyat: {{$json.previous_price}} TL\nYeni fiyat: {{$json.current_price}} TL\nİndirim: %{{Math.round($json.discount_pct)}}\n\nFormat:\n- Başlık (H1): SEO friendly, arama niyetli\n- Özet/Excerpt: 155 karakterlik SEO açıklaması\n- Giriş paragrafı\n- Fiyat analizi bölümü\n- Satın alma tavsiyesi\n- SSS bölümü (3 soru)\n- Slug: türkçe karaktersiz, tire ile\n\nTon: samimi, yardımcı, ticari değil\nKelime sayısı: 600-800\n\nLÜTFEN ÇIKTIYI SADECE AŞAĞIDAKİ GİBİ GEÇERLİ BİR JSON FORMATINDA VER. Ekstra hiçbir şey yazma:\n{\n  \"title\": \"Buraya Başlık\",\n  \"slug\": \"buraya-slug\",\n  \"content\": \"Buraya Markdown formatında içeriğin tamamı (## başlıklar gibi)\",\n  \"excerpt\": \"Buraya meta açıklaması/özeti\"\n}"
+            }
+          ]
+        }
+      },
+      "name": "Claude - Blog Yazısı Üret",
+      "type": "n8n-nodes-base.anthropic",
+      "typeVersion": 1,
+      "position": [
+        650,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "fromJson",
+        "jsonString": "={{$json.message.content}}"
+      },
+      "name": "Parse JSON",
+      "type": "n8n-nodes-base.jsonParse",
+      "typeVersion": 1,
+      "position": [
+        850,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "insert",
+        "schema": "public",
+        "table": "blogs",
+        "columns": "title,slug,content,excerpt,status,published_at,image_url",
+        "values": "={\n  \"title\": \"{{$json.title}}\",\n  \"slug\": \"{{$json.slug}}\",\n  \"content\": \"{{$json.content}}\",\n  \"excerpt\": \"{{$json.excerpt}}\",\n  \"status\": \"published\",\n  \"published_at\": \"{{$now}}\",\n  \"image_url\": \"https://images.unsplash.com/photo-1598327105666-5b89351cb315?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80\"\n}"
+      },
+      "name": "Supabase - Blogu Kaydet",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.1,
+      "position": [
+        1050,
+        300
+      ]
+    }
+  ],
+  "connections": {
+    "Hergün 02:00": {
+      "main": [
+        [
+          {
+            "node": "Supabase - Fiyatı Düşenleri Çek",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Supabase - Fiyatı Düşenleri Çek": {
+      "main": [
+        [
+          {
+            "node": "Claude - Blog Yazısı Üret",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Claude - Blog Yazısı Üret": {
+      "main": [
+        [
+          {
+            "node": "Parse JSON",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse JSON": {
+      "main": [
+        [
+          {
+            "node": "Supabase - Blogu Kaydet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {}
+}
