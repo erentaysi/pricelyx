@@ -1,18 +1,20 @@
-export function generateProductSlug(title: string, id: string): string {
+export function generateSeoSlug(text: string): string {
   const trMap: { [key: string]: string } = {
       'ç': 'c', 'ğ': 'g', 'ı': 'i', 'ö': 'o', 'ş': 's', 'ü': 'u',
       'Ç': 'c', 'Ğ': 'g', 'İ': 'i', 'Ö': 'o', 'Ş': 's', 'Ü': 'u',
   };
   
-  const slug = title
+  return text
       .toLowerCase()
       .replace(/[çğıöşüÇĞİÖŞÜ]/g, match => trMap[match])
       .replace(/[^a-z0-9\s-]/g, '') // Remove non-alphanumeric (except spaces and dashes)
       .trim()
       .replace(/\s+/g, '-') // Replace spaces with dashes
       .replace(/-+/g, '-'); // Remove consecutive dashes
+}
 
-  return `${slug}-${id}`;
+export function generateProductSlug(title: string, id: string): string {
+  return `${generateSeoSlug(title)}-${id}`;
 }
 
 export function extractIdFromSlug(slugId: string): string {
