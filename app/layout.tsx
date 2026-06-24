@@ -54,10 +54,6 @@ export const metadata: Metadata = {
   },
 };
 
-import { Inter } from 'next/font/google';
-
-const inter = Inter({ subsets: ['latin'], display: 'swap', variable: '--font-inter' });
-
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -65,7 +61,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="tr">
-      <body className={`${inter.variable} font-sans bg-gray-50 antialiased text-slate-900`}>
+      <body className="bg-gray-50 font-sans antialiased text-slate-900">
         <Suspense fallback={null}>
           <GoogleAnalytics gaId={process.env.NEXT_PUBLIC_GA_ID || ""} />
         </Suspense>

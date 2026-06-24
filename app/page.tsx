@@ -116,7 +116,7 @@ export default async function Home() {
       {/* Hero Section */}
       <section className="gradient-bg text-white py-16 md:py-24">
         <div className="container mx-auto px-4">
-            <div className="max-w-4xl mx-auto text-center">
+            <div className="max-w-4xl mx-auto text-center fade-in">
                 <h1 className="text-4xl md:text-5xl font-black mb-6 text-shadow-sm leading-tight">
                   Türkiye'nin En Gelişmiş Ürün ve Fiyat Karşılaştırma Platformu
                 </h1>
