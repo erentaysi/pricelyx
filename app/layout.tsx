@@ -95,9 +95,9 @@ function Footer() {
                       Milyonlarca ürünü anlık olarak analiz eden Piinti, alışveriş yolculuğunuzda size en doğru şeffaflığı sunar.
                     </p>
                     <div className="flex gap-4">
-                        <a href="#" className="w-10 h-10 rounded-full border border-slate-700 flex items-center justify-center hover:bg-white hover:text-slate-900 transition-all duration-300"><Twitter className="w-4 h-4" /></a>
-                        <a href="#" className="w-10 h-10 rounded-full border border-slate-700 flex items-center justify-center hover:bg-white hover:text-slate-900 transition-all duration-300"><Instagram className="w-4 h-4" /></a>
-                        <a href="#" className="w-10 h-10 rounded-full border border-slate-700 flex items-center justify-center hover:bg-white hover:text-slate-900 transition-all duration-300"><Linkedin className="w-4 h-4" /></a>
+                        <a href="#" aria-label="Twitter" className="w-10 h-10 rounded-full border border-slate-700 flex items-center justify-center hover:bg-white hover:text-slate-900 transition-all duration-300"><Twitter className="w-4 h-4" /></a>
+                        <a href="#" aria-label="Instagram" className="w-10 h-10 rounded-full border border-slate-700 flex items-center justify-center hover:bg-white hover:text-slate-900 transition-all duration-300"><Instagram className="w-4 h-4" /></a>
+                        <a href="#" aria-label="Linkedin" className="w-10 h-10 rounded-full border border-slate-700 flex items-center justify-center hover:bg-white hover:text-slate-900 transition-all duration-300"><Linkedin className="w-4 h-4" /></a>
                     </div>
                 </div>
                 

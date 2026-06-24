@@ -71,14 +71,14 @@ export default function ProductCard({ product }: ProductCardProps) {
 
           <div className="mt-auto">
             <div className="flex flex-col mb-4">
-              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-tighter mb-1">En Düşük Fiyat</span>
+              <span className="text-[10px] font-bold text-slate-500 uppercase tracking-tighter mb-1">En Düşük Fiyat</span>
               <div className={`text-2xl font-black ${analytics.trend === 'best' || analytics.trend === 'good' ? 'text-emerald-600' : analytics.trend === 'bad' ? 'text-rose-600' : 'text-slate-900'}`}>
                 {minPrice > 0 ? trPrice(minPrice) : 'Fiyat Yok'}
               </div>
             </div>
 
             <div className="pt-4 border-t border-slate-50 flex items-center justify-between">
-              <div className="flex items-center gap-1.5 text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+              <div className="flex items-center gap-1.5 text-[10px] font-bold text-slate-500 uppercase tracking-widest">
                 <Database className="w-3 h-3" /> {prices.length || 1} Mağaza
               </div>
               <div className="text-[10px] font-black text-primary uppercase tracking-widest opacity-0 group-hover:opacity-100 transition-opacity">

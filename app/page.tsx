@@ -23,23 +23,28 @@ import ProductCard from '@/app/components/ProductCard';
 export const dynamic = 'force-dynamic';
 
 export default async function Home() {
-  // Dinamik Sayaçlar için veritabanı sorguları
-  const { count: productCount } = await supabase.from('products').select('*', { count: 'exact', head: true });
-  const { count: vendorCount } = await supabase.from('vendors').select('*', { count: 'exact', head: true });
-  const { count: priceCount } = await supabase.from('product_prices').select('*', { count: 'exact', head: true });
-
-  const { data: dbCategories } = await supabase.from('categories').select('id, name, slug');
-  
-  // Tüm aktif ürünleri al
-  const { data: allProducts } = await supabase
-    .from('products')
-    .select(`
-      id, title, image_url, rating, reviews_count, is_trend, category_id,
-      brands (name),
-      product_prices (price, original_price)
-    `)
-    .order('created_at', { ascending: false })
-    .limit(500);
+  // Tüm sorguları aynı anda başlat (Promise.all) ile TTFB süresini kısaltıyoruz
+  const [
+    { count: productCount },
+    { count: vendorCount },
+    { count: priceCount },
+    { data: dbCategories },
+    { data: allProducts }
+  ] = await Promise.all([
+    supabase.from('products').select('*', { count: 'exact', head: true }),
+    supabase.from('vendors').select('*', { count: 'exact', head: true }),
+    supabase.from('product_prices').select('*', { count: 'exact', head: true }),
+    supabase.from('categories').select('id, name, slug'),
+    supabase
+      .from('products')
+      .select(`
+        id, title, image_url, rating, reviews_count, is_trend, category_id,
+        brands (name),
+        product_prices (price, original_price)
+      `)
+      .order('created_at', { ascending: false })
+      .limit(500)
+  ]);
 
   const productsList = allProducts || [];
 
@@ -147,7 +152,7 @@ export default async function Home() {
                         <Link href={`/urunler?cat=${cat.slug}`} key={cat.id} className="flex items-center gap-3 bg-slate-50 hover:bg-primary/5 hover:border-primary/20 transition-all duration-300 border border-slate-100 rounded-full px-5 py-3 whitespace-nowrap">
                             {categoryIcons[cat.slug] || <div className="w-5 h-5 bg-gray-200 rounded-full" />}
                             <span className="font-semibold text-slate-700 text-sm">{cat.name}</span>
-                            <span className="bg-white text-xs font-bold text-slate-400 px-2 py-0.5 rounded-full shadow-sm">{count}</span>
+                            <span className="bg-white text-xs font-bold text-slate-500 px-2 py-0.5 rounded-full shadow-sm">{count}</span>
                         </Link>
                       );
                   })}
