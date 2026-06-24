@@ -78,6 +78,7 @@ export default function AICoach() {
   if (!isOpen) {
     return (
       <button 
+        aria-label="AI Asistanı Aç"
         onClick={() => setIsOpen(true)}
         className="fixed bottom-8 right-8 w-16 h-16 bg-gradient-to-br from-primary to-accent rounded-[2rem] shadow-2xl shadow-primary/20 flex items-center justify-center text-white hover:scale-110 transition-all duration-300 z-[100] group"
       >
@@ -103,10 +104,10 @@ export default function AICoach() {
                 </div>
             </div>
             <div className="flex items-center gap-2">
-                <button onClick={() => setIsMinimized(!isMinimized)} className="text-slate-400 hover:text-white transition-colors">
+                <button aria-label="Küçült" onClick={() => setIsMinimized(!isMinimized)} className="text-slate-400 hover:text-white transition-colors">
                     {isMinimized ? <Maximize2 className="w-5 h-5" /> : <Minimize2 className="w-5 h-5" />}
                 </button>
-                <button onClick={() => setIsOpen(false)} className="text-slate-400 hover:text-white transition-colors">
+                <button aria-label="Kapat" onClick={() => setIsOpen(false)} className="text-slate-400 hover:text-white transition-colors">
                     <X className="w-5 h-5" />
                 </button>
             </div>
@@ -157,6 +158,7 @@ export default function AICoach() {
                             className="w-full bg-slate-100 border-none rounded-2xl py-4 pl-6 pr-14 text-sm font-bold focus:ring-2 focus:ring-primary/20 transition-all placeholder:text-slate-400"
                         />
                         <button 
+                            aria-label="Gönder"
                             onClick={handleSend}
                             disabled={!input.trim() || isLoading}
                             className="absolute right-2 top-2 w-10 h-10 bg-primary text-white rounded-xl flex items-center justify-center hover:scale-105 transition-all disabled:opacity-50 disabled:scale-100"
@@ -164,7 +166,7 @@ export default function AICoach() {
                             <Send className="w-5 h-5" />
                         </button>
                     </div>
-                    <p className="text-[9px] text-slate-400 text-center mt-4 font-bold uppercase tracking-widest opacity-50">
+                    <p className="text-[9px] text-slate-500 text-center mt-4 font-bold uppercase tracking-widest opacity-50">
                         Piinti AI model tabanlı bir asistan olup doğruluğu için fiyatları kontrol etmenizi öneririz.
                     </p>
                 </div>

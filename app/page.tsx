@@ -20,7 +20,7 @@ import {
 } from 'lucide-react';
 import ProductCard from '@/app/components/ProductCard';
 
-export const dynamic = 'force-dynamic';
+export const revalidate = 3600; // 1 saatlik ISR cache ile TTFB sorununu sıfırlar
 
 export default async function Home() {
   // Tüm sorguları aynı anda başlat (Promise.all) ile TTFB süresini kısaltıyoruz

@@ -91,7 +91,7 @@ function Footer() {
                         className="object-contain filter brightness-0 invert opacity-90"
                       />
                     </Link>
-                    <p className="text-slate-400 text-sm leading-relaxed mb-8">
+                    <p className="text-slate-300 text-sm leading-relaxed mb-8">
                       Milyonlarca ürünü anlık olarak analiz eden Piinti, alışveriş yolculuğunuzda size en doğru şeffaflığı sunar.
                     </p>
                     <div className="flex gap-4">
@@ -104,30 +104,30 @@ function Footer() {
                 <div>
                     <h4 className="font-bold mb-6 text-white text-lg tracking-tight">Hızlı Linkler</h4>
                     <ul className="space-y-4">
-                        <li><Link href="/hakkimizda" className="text-slate-400 hover:text-white transition-colors flex items-center gap-3 text-sm underline-offset-4 hover:underline"><Info className="w-4 h-4" /> Hakkımızda</Link></li>
-                        <li><Link href="/iletisim" className="text-slate-400 hover:text-white transition-colors flex items-center gap-3 text-sm underline-offset-4 hover:underline"><Mail className="w-4 h-4" /> İletişim</Link></li>
-                        <li><Link href="/kariyer" className="text-slate-400 hover:text-white transition-colors flex items-center gap-3 text-sm underline-offset-4 hover:underline"><Briefcase className="w-4 h-4" /> Kariyer</Link></li>
-                        <li><Link href="/blog" className="text-slate-400 hover:text-white transition-colors flex items-center gap-3 text-sm underline-offset-4 hover:underline"><BookOpen className="w-4 h-4" /> Rehber & Blog</Link></li>
+                        <li><Link href="/hakkimizda" className="text-slate-300 hover:text-white transition-colors flex items-center gap-3 text-sm underline-offset-4 hover:underline"><Info className="w-4 h-4" /> Hakkımızda</Link></li>
+                        <li><Link href="/iletisim" className="text-slate-300 hover:text-white transition-colors flex items-center gap-3 text-sm underline-offset-4 hover:underline"><Mail className="w-4 h-4" /> İletişim</Link></li>
+                        <li><Link href="/kariyer" className="text-slate-300 hover:text-white transition-colors flex items-center gap-3 text-sm underline-offset-4 hover:underline"><Briefcase className="w-4 h-4" /> Kariyer</Link></li>
+                        <li><Link href="/blog" className="text-slate-300 hover:text-white transition-colors flex items-center gap-3 text-sm underline-offset-4 hover:underline"><BookOpen className="w-4 h-4" /> Rehber & Blog</Link></li>
                     </ul>
                 </div>
                 
                 <div>
                     <h4 className="font-bold mb-6 text-white text-lg tracking-tight">Yardım & Destek</h4>
                     <ul className="space-y-4">
-                        <li><Link href="/sss" className="text-slate-400 hover:text-white transition-colors flex items-center gap-3 text-sm underline-offset-4 hover:underline"><HelpCircle className="w-4 h-4" /> SSS</Link></li>
-                        <li><Link href="/sartlar" className="text-slate-400 hover:text-white transition-colors flex items-center gap-3 text-sm underline-offset-4 hover:underline"><FileText className="w-4 h-4" /> Kullanım Koşulları</Link></li>
-                        <li><Link href="/gizlilik" className="text-slate-400 hover:text-white transition-colors flex items-center gap-3 text-sm underline-offset-4 hover:underline"><ShieldCheck className="w-4 h-4" /> Gizlilik Politikası</Link></li>
+                        <li><Link href="/sss" className="text-slate-300 hover:text-white transition-colors flex items-center gap-3 text-sm underline-offset-4 hover:underline"><HelpCircle className="w-4 h-4" /> SSS</Link></li>
+                        <li><Link href="/sartlar" className="text-slate-300 hover:text-white transition-colors flex items-center gap-3 text-sm underline-offset-4 hover:underline"><FileText className="w-4 h-4" /> Kullanım Koşulları</Link></li>
+                        <li><Link href="/gizlilik" className="text-slate-300 hover:text-white transition-colors flex items-center gap-3 text-sm underline-offset-4 hover:underline"><ShieldCheck className="w-4 h-4" /> Gizlilik Politikası</Link></li>
                     </ul>
                 </div>
 
                 <div>
                     <h4 className="font-bold mb-6 text-white text-lg tracking-tight">Merkez Ofis</h4>
                     <ul className="space-y-4">
-                        <li className="text-slate-400 flex items-start gap-3 text-sm">
+                        <li className="text-slate-300 flex items-start gap-3 text-sm">
                           <MapPin className="w-5 h-5 shrink-0 text-primary" />
                           <span>Levent, Büyükdere Cd. No:199, 34394 Şişli/İstanbul</span>
                         </li>
-                        <li className="text-slate-400 flex items-center gap-3 text-sm">
+                        <li className="text-slate-300 flex items-center gap-3 text-sm">
                           <Phone className="w-5 h-5 shrink-0 text-primary" />
                           <span>+90 212 999 88 77</span>
                         </li>
