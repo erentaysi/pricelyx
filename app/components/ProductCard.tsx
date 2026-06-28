@@ -20,6 +20,17 @@ export default function ProductCard({ product }: ProductCardProps) {
 
   const analytics = analyzePriceTrend(product.price_history || [], minPrice);
 
+  const isLG = product.brands?.name?.toLowerCase() === 'lg' || product.brand?.toLowerCase() === 'lg';
+  const lgPrice = prices.find((p: any) => p.vendors?.name === 'LG Türkiye' || p.vendor?.name === 'LG Türkiye');
+  
+  const handleLgClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const lgAffiliateBase = 'https://kjuzv.com/g/kzqyy0q257e3ccfa16cbef2202fc4d/';
+    const link = lgPrice && lgPrice.product_url ? `${lgAffiliateBase}?ulp=${encodeURIComponent(lgPrice.product_url)}` : lgAffiliateBase;
+    window.open(link, '_blank');
+  };
+
   return (
     <Link href={`/urun/${generateProductSlug(product.title, product.id)}`} className="group h-full">
       <div className="bg-white rounded-3xl border border-slate-100 hover:border-primary/20 hover:shadow-2xl hover:shadow-primary/5 transition-all duration-500 flex flex-col h-full overflow-hidden relative">
@@ -81,9 +92,15 @@ export default function ProductCard({ product }: ProductCardProps) {
               <div className="flex items-center gap-1.5 text-[10px] font-bold text-slate-500 uppercase tracking-widest">
                 <Database className="w-3 h-3" /> {prices.length || 1} Mağaza
               </div>
-              <div className="text-[10px] font-black text-primary uppercase tracking-widest opacity-0 group-hover:opacity-100 transition-opacity">
-                İncele →
-              </div>
+              {isLG ? (
+                <button onClick={handleLgClick} className="bg-[#A50034] text-white px-3 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-widest hover:bg-[#800028] transition-colors relative z-20 shadow-md flex items-center gap-1">
+                  LG.com'da Gör
+                </button>
+              ) : (
+                <div className="text-[10px] font-black text-primary uppercase tracking-widest opacity-0 group-hover:opacity-100 transition-opacity">
+                  İncele →
+                </div>
+              )}
             </div>
           </div>
         </div>

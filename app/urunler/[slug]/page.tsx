@@ -92,6 +92,100 @@ export default async function UrunDetay({ params }: { params: { slug: string } }
     .eq('slug', params.slug)
     .single();
 
+import { notFound } from 'next/navigation';
+import { supabase } from '@/lib/supabase';
+import { extractIdFromSlug, appendAffiliateTag, generateSeoSlug } from '@/lib/utils';
+import SearchForm from '@/app/components/SearchForm';
+import Link from 'next/link';
+import PriceHistoryChart from '@/app/components/PriceHistoryChart';
+import PriceAlertModal from '@/app/components/PriceAlertModal';
+import ReviewSummary from '@/app/components/ReviewSummary';
+import FavoriteButton from '@/app/components/FavoriteButton';
+import { 
+  Star, 
+  Truck, 
+  Store, 
+  LineChart, 
+  Package, 
+  ChevronRight,
+  ShieldCheck,
+  Zap,
+  Flame,
+  ArrowRight
+} from 'lucide-react';
+import { analyzePriceTrend } from '@/lib/analytics';
+import Image from 'next/image';
+
+import { Metadata } from 'next';
+
+export const dynamic = 'force-dynamic';
+
+export async function generateMetadata({ params }: { params: { slug: string } }): Promise<Metadata> {
+  const { data: product } = await supabase
+    .from('products')
+    .select('title, categories(name), brands(name), image_url, product_prices(price)')
+    .eq('slug', params.slug)
+    .single();
+
+  if (!product) {
+    return { title: 'Ürün Bulunamadı | Piinti' };
+  }
+
+  const categoryObj: any = Array.isArray(product.categories) ? product.categories[0] : product.categories;
+  const categoryName = categoryObj?.name || 'Kategori';
+  const brandObj: any = Array.isArray(product.brands) ? product.brands[0] : product.brands;
+  const brandName = brandObj?.name || '';
+
+  const title = `${product.title} Fiyatları | En Uygun Fiyat - Piinti`;
+  const description = `${product.title} ürününün Trendyol, Amazon, Hepsiburada fiyatlarını karşılaştırın. En ucuz fiyatı bulun, fiyat geçmişini inceleyin.`;
+
+  return {
+    title,
+    description,
+    alternates: {
+      canonical: `https://piinti.com/urunler/${params.slug}`
+    },
+    openGraph: {
+      title,
+      description,
+      url: `https://piinti.com/urunler/${params.slug}`,
+      type: 'website',
+      images: [product.image_url || 'https://www.piinti.com/og-image.jpg']
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title,
+      description,
+      images: [product.image_url || 'https://www.piinti.com/og-image.jpg']
+    }
+  };
+}
+
+export default async function UrunDetay({ params }: { params: { slug: string } }) {
+  const { data: product } = await supabase
+    .from('products')
+    .select(`
+      *,
+      asin,
+      brands (name),
+      categories (name),
+      product_prices (
+        price,
+        original_price,
+        shipping_info,
+        product_url,
+        in_stock,
+        vendors (name, logo, color)
+      ),
+      price_history (
+        id,
+        price,
+        recorded_at
+      )
+    `)
+    .eq('slug', params.slug)
+    .single();
+
   if (!product) {
     notFound();
   }
@@ -100,11 +194,17 @@ export default async function UrunDetay({ params }: { params: { slug: string } }
   const categoryName = categoryObj?.name;
   const brandObj: any = Array.isArray(product.brands) ? product.brands[0] : product.brands;
   const brandName = brandObj?.name;
+  
+  const isLG = brandName?.toLowerCase() === 'lg' || brandName?.toLowerCase() === 'lg electronics';
 
   const prices = product.product_prices || [];
   const lowestPrice = prices.length > 0 ? Math.min(...prices.map((p:any) => p.price)) : 0;
   const highestPrice = prices.length > 0 ? Math.max(...prices.map((p:any) => p.price)) : 0;
   const sortedPrices = [...prices].sort((a:any, b:any) => a.price - b.price);
+  
+  const lgPrice = sortedPrices.find((p: any) => p.vendors?.name === 'LG Türkiye');
+  const lgAffiliateBase = 'https://kjuzv.com/g/kzqyy0q257e3ccfa16cbef2202fc4d/';
+  const lgAffiliateLink = lgPrice && lgPrice.product_url ? `${lgAffiliateBase}?ulp=${encodeURIComponent(lgPrice.product_url)}` : lgAffiliateBase;
 
   function trPrice(price: number) {
     return new Intl.NumberFormat('tr-TR', { maximumFractionDigits: 0 }).format(Math.round(price)) + ' ₺';
@@ -477,10 +577,16 @@ export default async function UrunDetay({ params }: { params: { slug: string } }
               </div>
               <div className="flex flex-col items-center gap-4 w-full sm:w-auto">
                 <PriceAlertModal productId={product.id} productTitle={product.title} currentPrice={lowestPrice} />
-                {sortedPrices.length > 0 && sortedPrices[0].product_url && sortedPrices[0].product_url.startsWith('http') && (
-                  <a href={appendAffiliateTag(sortedPrices[0].product_url, process.env.AMAZON_ASSOCIATE_TAG)} target="_blank" rel="noopener noreferrer" className="bg-white hover:bg-slate-100 text-slate-900 font-black h-14 px-10 rounded-2xl shadow-xl transition-all duration-300 hover:-translate-y-1 w-full sm:w-auto flex items-center justify-center gap-3 group">
-                    Mağazaya İlerle <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+                {isLG ? (
+                  <a href={lgAffiliateLink} target="_blank" rel="noopener noreferrer" className="bg-[#A50034] hover:bg-[#800028] text-white font-black h-14 px-10 rounded-2xl shadow-xl transition-all duration-300 hover:-translate-y-1 w-full sm:w-auto flex items-center justify-center gap-3 group">
+                    LG.com'da Gör <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
                   </a>
+                ) : (
+                  sortedPrices.length > 0 && sortedPrices[0].product_url && sortedPrices[0].product_url.startsWith('http') && (
+                    <a href={appendAffiliateTag(sortedPrices[0].product_url, process.env.AMAZON_ASSOCIATE_TAG)} target="_blank" rel="noopener noreferrer" className="bg-white hover:bg-slate-100 text-slate-900 font-black h-14 px-10 rounded-2xl shadow-xl transition-all duration-300 hover:-translate-y-1 w-full sm:w-auto flex items-center justify-center gap-3 group">
+                      Mağazaya İlerle <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+                    </a>
+                  )
                 )}
               </div>
             </div>
