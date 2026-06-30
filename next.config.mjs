@@ -31,6 +31,10 @@ const nextConfig = {
       {
         protocol: 'https',
         hostname: '**.trendyol.com',
+      },
+      {
+        protocol: 'https',
+        hostname: 'www.lg.com',
       }
     ],
   },

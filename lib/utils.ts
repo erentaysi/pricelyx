@@ -50,6 +50,8 @@ export function appendAffiliateTag(url: string, tag?: string): string {
     const parsedUrl = new URL(url);
     if (parsedUrl.hostname.includes('amazon.')) {
       parsedUrl.searchParams.set('tag', finalTag);
+    } else if (parsedUrl.hostname.includes('lg.com')) {
+      return `https://kjuzv.com/g/kzqyy0q257e3ccfa16cbef2202fc4d/?ulp=${encodeURIComponent(url)}`;
     }
     return parsedUrl.toString();
   } catch (e) {

@@ -62,6 +62,15 @@ function normalizeTitle(title) {
   return t;
 }
 
+function generateSlug(title) {
+  let t = title.toLowerCase();
+  const trMap = { 'ç':'c','ğ':'g','ı':'i','ö':'o','ş':'s','ü':'u' };
+  t = t.replace(/[çğıöşü]/g, m => trMap[m]);
+  t = t.replace(/[^a-z0-9]+/g, '-');
+  t = t.replace(/^-+|-+$/g, '');
+  return t;
+}
+
 /**
  * Normalize edilmiş başlıktan arama kelimeleri oluşturur.
  * "apple iphone 16 128gb" → ['apple', 'iphone', '16', '128gb']
@@ -177,7 +186,7 @@ function detectCategory(title) {
  * Eğer ürün zaten varsa, o ürüne yeni mağaza fiyatını ekler.
  * Yoksa yeni ürün oluşturup fiyat ekler.
  */
-async function matchAndSaveProduct({ title, price, image, url, vendorId, shippingInfo }) {
+async function matchAndSaveProduct({ title, price, image, url, vendorId, shippingInfo, brand }) {
   if (!title || !price || price <= 0) return null;
   
   // Başlığı temizle
@@ -193,7 +202,7 @@ async function matchAndSaveProduct({ title, price, image, url, vendorId, shippin
   const { categories, brands } = matchAndSaveProduct._cache;
   
   // Marka bul veya oluştur
-  const brandName = extractBrand(cleanTitle);
+  const brandName = brand || extractBrand(cleanTitle);
   let brandObj = brands.find(b => b.name.toLowerCase() === brandName.toLowerCase());
   if (!brandObj) {
     const { data: nb } = await supabase.from('brands').insert({ name: brandName }).select().single();
@@ -204,6 +213,11 @@ async function matchAndSaveProduct({ title, price, image, url, vendorId, shippin
   const catSlug = detectCategory(cleanTitle);
   const catObj = categories.find(c => c.slug === catSlug);
   
+  // Eşleşme aramadan önce, eğer marka title'da yoksa başa ekle (Arama kolaylığı için)
+  if (!cleanTitle.toLowerCase().includes(brandName.toLowerCase())) {
+      cleanTitle = brandName + ' ' + cleanTitle;
+  }
+  
   // Eşleşen ürün ara
   let productId = await findMatchingProduct(cleanTitle);
   
@@ -211,6 +225,7 @@ async function matchAndSaveProduct({ title, price, image, url, vendorId, shippin
     // Yeni ürün oluştur
     const { data: newProd } = await supabase.from('products').insert({
       title: cleanTitle,
+      slug: generateSlug(cleanTitle + ' ' + (Math.floor(Math.random() * 900) + 100)),
       brand_id: brandObj?.id || null,
       category_id: catObj?.id || null,
       image_url: image || null,

@@ -15,8 +15,17 @@ async function scrapeLG() {
     }
 
     const urls = sitemapText.match(/<loc>(.*?)<\/loc>/g).map(u => u.replace(/<\/?loc>/g, ''));
-    // Kategori, destek veya kampanya sayfalarını filtrele (sadece detay ürün sayfaları kalsın)
-    const productUrls = urls.filter(u => u.split('/').length >= 6 && !u.includes('support') && !u.includes('kampanyalar') && !u.includes('business'));
+    const productUrls = urls.filter(u => 
+        u.split('/').length >= 6 && 
+        !u.includes('support') && 
+        !u.includes('kampanyalar') && 
+        !u.includes('business') &&
+        !u.includes('/lg-hakkinda/') &&
+        !u.includes('/sso/') &&
+        !u.includes('/errors/') &&
+        !u.includes('/my-account/') &&
+        !u.includes('basin-ve-medya')
+    );
     
     // Rastgele 20 ürün seç (Hızlı test için)
     const shuffled = productUrls.sort(() => 0.5 - Math.random());
@@ -39,16 +48,29 @@ async function scrapeLG() {
             await new Promise(r => setTimeout(r, 3000)); // Fiyatın yüklenmesini bekle
 
             const product = await page.evaluate(() => {
-                const titleTag = document.querySelector('h1, meta[property="og:title"]');
-                let title = '';
-                if (titleTag) {
-                    title = titleTag.innerText || titleTag.getAttribute('content') || '';
-                }
+                let title = document.title || '';
+                title = title.split('Fiyatı')[0].split('Satın')[0].split('|')[0].trim();
                 
-                const imgTag = document.querySelector('meta[property="og:image"]');
+                let imgTag = document.querySelector('meta[property="og:image"]');
                 let image = imgTag ? imgTag.getAttribute('content') : '';
+                if (!image) {
+                    let firstImg = document.querySelector('.c-gallery__item img, .image__img, picture img');
+                    image = firstImg ? (firstImg.src || firstImg.getAttribute('data-src')) : '';
+                }
+                if (image && image.startsWith('/')) {
+                    image = 'https://www.lg.com' + image;
+                }
 
-                const priceTag = document.querySelector('.c-price__purchase, .price-area .price');
+                const h1 = document.querySelector('h1');
+                let container = h1 ? h1.parentElement : null;
+                // Go up the tree to find a container with a price, max 12 levels to avoid hitting the whole body
+                let levels = 0;
+                while(container && !container.querySelector('.c-price__purchase') && levels < 12) {
+                    container = container.parentElement;
+                    levels++;
+                }
+                const priceTag = container ? container.querySelector('.c-price__purchase') : null;
+                
                 let priceNum = 0;
 
                 if (priceTag && priceTag.innerText) {
@@ -57,6 +79,9 @@ async function scrapeLG() {
                 }
 
                 if (title && priceNum > 0) {
+                    if (title.includes('LG Televizyonlar, Ev Aletleri') || title.includes('404')) {
+                        return null; // Redirected to homepage or 404
+                    }
                     return {
                         title: title.replace('| LG Türkiye', '').trim(),
                         brand: 'LG',
@@ -93,9 +118,10 @@ async function scrapeLG() {
             title: p.title,
             price: p.price,
             image: p.image,
-            url: p.url,
+            url: `https://kjuzv.com/g/kzqyy0q257e3ccfa16cbef2202fc4d/?ulp=${encodeURIComponent(p.url)}`,
             vendorId: vendorId,
-            shippingInfo: 'Ücretsiz Kargo & Kurulum'
+            shippingInfo: 'Ücretsiz Kargo & Kurulum',
+            brand: p.brand
         });
         if (pid) processedCount++;
     }
