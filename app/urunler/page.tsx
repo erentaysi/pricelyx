@@ -31,8 +31,8 @@ export async function generateMetadata({ searchParams }: { searchParams: { q?: s
   };
 }
 
-export default async function UrunlerPage({ searchParams }: { searchParams: { q?: string, cat?: string, brand?: string, min_price?: string, max_price?: string } }) {
-  const { q, cat, brand, min_price, max_price } = searchParams;
+export default async function UrunlerPage({ searchParams }: { searchParams: { q?: string, cat?: string, brand?: string, min_price?: string, max_price?: string, sort?: string } }) {
+  const { q, cat, brand, min_price, max_price, sort } = searchParams;
 
   // Build Supabase query
   let query = supabase.from('products').select(`
@@ -67,6 +67,20 @@ export default async function UrunlerPage({ searchParams }: { searchParams: { q?
     });
   }
 
+  // Sorting
+  const currentSort = sort || 'newest';
+  const getPrice = (p: any) => {
+    const priceStr = p.product_prices?.[0]?.price || p.price_history?.[0]?.price;
+    return priceStr ? parseFloat(priceStr.toString().replace(/[^0-9.]/g, '')) : 0;
+  };
+
+  if (currentSort === 'price_asc') {
+    filteredProducts.sort((a: any, b: any) => getPrice(a) - getPrice(b));
+  } else if (currentSort === 'price_desc') {
+    filteredProducts.sort((a: any, b: any) => getPrice(b) - getPrice(a));
+  }
+  // If 'newest', it's already sorted by created_at DESC from the Supabase query.
+
   // Get all categories to build hierarchy
   const { data: allCategories } = await supabase.from('categories').select('*');
   const { data: productsForFilters } = await supabase.from('products').select('category_id, brands(name)');
@@ -100,8 +114,9 @@ export default async function UrunlerPage({ searchParams }: { searchParams: { q?
         currentCat={cat} 
         currentBrand={brand} 
         currentQ={q}
-        currentMinPrice={min_price}
+        currentMinPrice={min_price} 
         currentMaxPrice={max_price}
+        currentSort={currentSort}
       />
 
       {/* Product List */}

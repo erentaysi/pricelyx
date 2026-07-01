@@ -10,7 +10,8 @@ export default function FilterSidebar({
   currentBrand, 
   currentQ,
   currentMinPrice,
-  currentMaxPrice
+  currentMaxPrice,
+  currentSort
 }: { 
   categories: any[], 
   brands: any[], 
@@ -18,7 +19,8 @@ export default function FilterSidebar({
   currentBrand?: string,
   currentQ?: string,
   currentMinPrice?: string,
-  currentMaxPrice?: string
+  currentMaxPrice?: string,
+  currentSort?: string
 }) {
   const router = useRouter();
   const [isMobileOpen, setIsMobileOpen] = useState(false);
@@ -43,6 +45,7 @@ export default function FilterSidebar({
     if (currentBrand) params.set('brand', currentBrand);
     if (currentMinPrice) params.set('min_price', currentMinPrice);
     if (currentMaxPrice) params.set('max_price', currentMaxPrice);
+    if (currentSort) params.set('sort', currentSort);
 
     if (value) {
       params.set(key, value);
@@ -265,6 +268,57 @@ export default function FilterSidebar({
             >
               Uygula
             </button>
+          </div>
+
+          {/* Sıralama */}
+          <div className="pt-6 mt-6 border-t border-slate-100">
+            <h3 className="font-bold mb-4 text-slate-800">Sıralama</h3>
+            <div className="flex flex-col gap-2">
+              <label className={`flex items-center gap-3 cursor-pointer p-2 rounded-lg transition-colors ${(!currentSort || currentSort === 'newest') ? 'bg-slate-100 text-slate-900' : 'hover:bg-slate-50 text-slate-500'}`}>
+                <input 
+                  type="radio" 
+                  name="sort" 
+                  className="hidden"
+                  onChange={() => {
+                    updateFilters('sort', 'newest');
+                    if (isMobileOpen) setIsMobileOpen(false);
+                  }}
+                  checked={!currentSort || currentSort === 'newest'}
+                />
+                <div className={`w-3 h-3 rounded-full flex items-center justify-center ${(!currentSort || currentSort === 'newest') ? 'border-4 border-primary' : 'border-2 border-slate-300'}`}></div>
+                <span className={`text-sm ${(!currentSort || currentSort === 'newest') ? 'font-bold' : 'font-medium'}`}>En Yeniler</span>
+              </label>
+              
+              <label className={`flex items-center gap-3 cursor-pointer p-2 rounded-lg transition-colors ${currentSort === 'price_asc' ? 'bg-slate-100 text-slate-900' : 'hover:bg-slate-50 text-slate-500'}`}>
+                <input 
+                  type="radio" 
+                  name="sort" 
+                  className="hidden"
+                  onChange={() => {
+                    updateFilters('sort', 'price_asc');
+                    if (isMobileOpen) setIsMobileOpen(false);
+                  }}
+                  checked={currentSort === 'price_asc'}
+                />
+                <div className={`w-3 h-3 rounded-full flex items-center justify-center ${currentSort === 'price_asc' ? 'border-4 border-primary' : 'border-2 border-slate-300'}`}></div>
+                <span className={`text-sm ${currentSort === 'price_asc' ? 'font-bold' : 'font-medium'}`}>Artan Fiyat (En Ucuz)</span>
+              </label>
+
+              <label className={`flex items-center gap-3 cursor-pointer p-2 rounded-lg transition-colors ${currentSort === 'price_desc' ? 'bg-slate-100 text-slate-900' : 'hover:bg-slate-50 text-slate-500'}`}>
+                <input 
+                  type="radio" 
+                  name="sort" 
+                  className="hidden"
+                  onChange={() => {
+                    updateFilters('sort', 'price_desc');
+                    if (isMobileOpen) setIsMobileOpen(false);
+                  }}
+                  checked={currentSort === 'price_desc'}
+                />
+                <div className={`w-3 h-3 rounded-full flex items-center justify-center ${currentSort === 'price_desc' ? 'border-4 border-primary' : 'border-2 border-slate-300'}`}></div>
+                <span className={`text-sm ${currentSort === 'price_desc' ? 'font-bold' : 'font-medium'}`}>Azalan Fiyat (En Pahalı)</span>
+              </label>
+            </div>
           </div>
 
         </div>
