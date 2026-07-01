@@ -40,7 +40,7 @@ export default function Navbar() {
         <div className="flex items-center justify-between">
           {/* Logo */}
           <Link href="/" className="flex items-center group">
-            <div className="relative w-[150px] h-[50px] group-hover:scale-105 transition-transform duration-300">
+            <div className="relative w-[180px] h-[60px] group-hover:scale-105 transition-transform duration-300">
               <Image 
                 src="/logo.png" 
                 alt="Piinti Logo" 
