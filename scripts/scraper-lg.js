@@ -27,9 +27,9 @@ async function scrapeLG() {
         !u.includes('basin-ve-medya')
     );
     
-    // Rastgele 20 ürün seç (Hızlı test için)
+    // Rastgele sırala ki her seferinde farklı yerlerden başlasın (ama hepsini çekecek)
     const shuffled = productUrls.sort(() => 0.5 - Math.random());
-    const targetUrls = shuffled.slice(0, 20);
+    const targetUrls = shuffled;
 
     const browser = await launchBrowser();
     const page = await browser.newPage();
