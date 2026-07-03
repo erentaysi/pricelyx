@@ -1,5 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
 import Link from 'next/link';
+import Image from 'next/image';
 import { ArrowRight, Calendar, BookOpen } from 'lucide-react';
 
 const supabase = createClient(
@@ -7,7 +8,7 @@ const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 );
 
-export const revalidate = 3600; // Her saat başı sayfayı yeniden oluştur (SEO için)
+export const revalidate = 0; // Dinamik sayfa, anında yenilenir
 
 export const metadata = {
   title: 'Blog & Rehber | En Ucuz Fiyatları Bulmadan Önce Okuyun - Piinti',
@@ -47,13 +48,13 @@ export default async function BlogIndexPage() {
             >
               {/* Görsel */}
               <div className="aspect-[16/10] relative overflow-hidden bg-slate-100">
-                {blog.image_url && (
-                  <img 
-                    src={blog.image_url} 
-                    alt={blog.title}
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
-                  />
-                )}
+                <Image 
+                  src={blog.image_url || 'https://images.unsplash.com/photo-1518770660439-4636190af475?w=800&q=80'} 
+                  alt={blog.title}
+                  fill
+                  sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                  className="object-cover group-hover:scale-105 transition-transform duration-700"
+                />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
               </div>
 

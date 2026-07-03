@@ -18,6 +18,10 @@ const nextConfig = {
       },
       {
         protocol: 'https',
+        hostname: 'm.media-amazon.com',
+      },
+      {
+        protocol: 'https',
         hostname: '**.media-amazon.com',
       },
       {
@@ -35,6 +39,14 @@ const nextConfig = {
       {
         protocol: 'https',
         hostname: 'www.lg.com',
+      },
+      {
+        protocol: 'https',
+        hostname: 'images.unsplash.com',
+      },
+      {
+        protocol: 'https',
+        hostname: 'source.unsplash.com',
       }
     ],
   },

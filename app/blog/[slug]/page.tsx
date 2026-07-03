@@ -84,16 +84,14 @@ export default async function BlogDetailPage({ params }: { params: { slug: strin
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify([articleLd, breadcrumbLd]) }} />
       
       {/* Blog Hero Image */}
-      {blog.image_url && (
-        <div className="w-full h-[40vh] md:h-[60vh] relative bg-slate-900">
-          <img 
-            src={blog.image_url} 
-            alt={blog.title} 
-            className="w-full h-full object-cover opacity-60"
-          />
-          <div className="absolute inset-0 bg-gradient-to-t from-white via-transparent to-transparent" />
-        </div>
-      )}
+      <div className="w-full h-[40vh] md:h-[60vh] relative bg-slate-900">
+        <img 
+          src={blog.image_url || 'https://images.unsplash.com/photo-1518770660439-4636190af475?w=1600&q=80'} 
+          alt={blog.title} 
+          className="w-full h-full object-cover opacity-60"
+        />
+        <div className="absolute inset-0 bg-gradient-to-t from-white via-transparent to-transparent" />
+      </div>
 
       <div className="max-w-4xl mx-auto px-6 -mt-32 relative z-10">
         

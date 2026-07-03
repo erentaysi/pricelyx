@@ -20,7 +20,7 @@ import {
 } from 'lucide-react';
 import ProductCard from '@/app/components/ProductCard';
 
-export const revalidate = 3600; // 1 saatlik ISR cache ile TTFB sorununu sıfırlar
+export const revalidate = 0; // 0 for testing, change back to 3600 later
 
 export default async function Home() {
   // Tüm sorguları aynı anda başlat (Promise.all) ile TTFB süresini kısaltıyoruz
@@ -82,7 +82,8 @@ export default async function Home() {
   const discountedProducts = getDiverseProducts(discountedPool, 8);
 
   // Günün Trendleri
-  const trendPool = productsList.filter(p => p.is_trend);
+  const discountedIds = new Set(discountedProducts.map((p: any) => p.id));
+  const trendPool = productsList.filter(p => p.is_trend && !discountedIds.has(p.id));
   const trendProducts = getDiverseProducts(trendPool, 8);
 
   // Kategorilere göre dinamik bölümler (En az 4 ürünü olanlar)
