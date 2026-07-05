@@ -39,12 +39,12 @@
         "messages": {
           "messageValues": [
             {
-              "content": "Aşağıdaki ürün verilerini kullanarak Piinti.com için SEO optimizeli Türkçe blog yazısı yaz.\n\nÜrün: {{$json.title}}\nKategori: {{$json.category}}  \nEski fiyat: {{$json.previous_price}} TL\nYeni fiyat: {{$json.current_price}} TL\nİndirim: %{{Math.round($json.discount_pct)}}\n\nFormat:\n- Başlık (H1): SEO friendly, arama niyetli (Başlıkta sadece marka model olmasın, ilgi çekici olsun)\n- Özet/Excerpt: 155 karakterlik SEO açıklaması\n- Giriş paragrafı\n- Fiyat analizi bölümü\n- Satın alma tavsiyesi\n- SSS bölümü (3 soru)\n- Slug: türkçe karaktersiz, boşluklar yerine tire olan küçük harfli SEO url (örnek: iphone-16-pro-fiyat-dususu)\n\nTon: samimi, yardımcı, ticari değil\nKelime sayısı: 600-800\n\nLÜTFEN ÇIKTIYI SADECE AŞAĞIDAKİ GİBİ GEÇERLİ BİR JSON FORMATINDA VER. Başında, sonunda veya içinde ekstra açıklama veya markdown kodu (```json vb.) kullanma. Sadece saf JSON dizisi olsun:\n{\n  \"title\": \"Buraya Başlık\",\n  \"slug\": \"buraya-slug\",\n  \"content\": \"Buraya Markdown formatında içeriğin tamamı (## başlıklar gibi)\",\n  \"excerpt\": \"Buraya meta açıklaması/özeti\"\n}"
+              "content": "Aşağıdaki ürün verilerini kullanarak Piinti.com için SEO optimizeli Türkçe blog yazısı yaz.\n\nÜrün: {{$json.title}}\nKategori: {{$json.category}}  \nEski fiyat: {{$json.previous_price}} TL\nYeni fiyat: {{$json.current_price}} TL\nİndirim: %{{Math.round($json.discount_pct)}}\n\nFormat:\n- Başlık (H1): SEO friendly, arama niyetli (Başlıkta sadece marka model olmasın, ilgi çekici olsun)\n- Özet/Excerpt: 155 karakterlik SEO açıklaması\n- Giriş paragrafı\n- Fiyat analizi bölümü\n- Satın alma tavsiyesi\n- SSS bölümü (3 soru)\n- Slug: türkçe karaktersiz, boşluklar yerine tire olan küçük harfli SEO url (örnek: iphone-16-pro-fiyat-dususu)\n\nTon: samimi, yardımcı, ticari değil\nKelime sayısı: 600-800\n\nLÜTFEN ÇIKTIYI SADECE AŞAĞIDAKİ GİBİ GEÇERLİ BİR JSON FORMATINDA VER. Başında, sonunda veya içinde ekstra açıklama veya markdown kodu (```json vb.) kullanma. Sadece saf JSON dizisi olsun.\n\nÇOK ÖNEMLİ: JSON içindeki metinlerde (özellikle 'content' alanında) satır sonu, yeni satır veya paragraf başı yapmak için kesinlikle GERÇEK SATIR SONU (ENTER) KULLANMA. Bunun yerine mutlaka `\\n` (ters bölü ve n) karakterlerini yazarak escape et. JSON içinde kontrol karakterleri (\n, \r, \t) bulunmamalıdır!\n\n{\n  \"title\": \"Buraya Başlık\",\n  \"slug\": \"buraya-slug\",\n  \"content\": \"Buraya Markdown formatında içeriğin tamamı (## başlıklar gibi)\",\n  \"excerpt\": \"Buraya meta açıklaması/özeti\"\n}"
             }
           ]
         }
       },
-      "name": "Claude - Blog Yazısı Üret",
+      "name": "Groq - Blog Yazısı Üret",
       "type": "n8n-nodes-base.anthropic",
       "typeVersion": 1,
       "position": [
@@ -54,14 +54,26 @@
     },
     {
       "parameters": {
+        "jsCode": "for (let item of $input.all()) {\n  let text = item.json.message?.content || item.json.content || item.json.text || \"\";\n  if (typeof text !== 'string') text = JSON.stringify(text);\n  text = text.replace(/```json/gi, '').replace(/```/g, '').trim();\n  \n  let inString = false;\n  let escaped = false;\n  let result = '';\n  for (let i = 0; i < text.length; i++) {\n    const char = text[i];\n    if (char === '\"' && !escaped) {\n      inString = !inString;\n      result += char;\n    } else if (char === '\\\\' && !escaped) {\n      escaped = true;\n      result += char;\n    } else {\n      escaped = false;\n      if (inString) {\n        if (char === '\\n') result += '\\\\n';\n        else if (char === '\\r') result += '\\\\r';\n        else if (char === '\\t') result += '\\\\t';\n        else result += char;\n      } else {\n        result += char;\n      }\n    }\n  }\n  item.json.sanitized = result;\n}\nreturn $input.all();"
+      },
+      "name": "Sanitize JSON",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        800,
+        300
+      ]
+    },
+    {
+      "parameters": {
         "operation": "fromJson",
-        "jsonString": "={{$json.message.content.replace(/```json|```/g, '')}}"
+        "jsonString": "={{$json.sanitized}}"
       },
       "name": "Parse JSON",
       "type": "n8n-nodes-base.jsonParse",
       "typeVersion": 1,
       "position": [
-        850,
+        950,
         300
       ]
     },
@@ -77,7 +89,7 @@
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2.1,
       "position": [
-        1050,
+        1150,
         300
       ]
     }
@@ -98,14 +110,25 @@
       "main": [
         [
           {
-            "node": "Claude - Blog Yazısı Üret",
+            "node": "Groq - Blog Yazısı Üret",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Claude - Blog Yazısı Üret": {
+    "Groq - Blog Yazısı Üret": {
+      "main": [
+        [
+          {
+            "node": "Sanitize JSON",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Sanitize JSON": {
       "main": [
         [
           {

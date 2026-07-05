@@ -26,9 +26,9 @@ export default function ProductCard({ product }: ProductCardProps) {
   const handleLgClick = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    const lgAffiliateBase = 'https://kjuzv.com/g/kzqyy0q257e3ccfa16cbef2202fc4d/';
-    const link = lgPrice && lgPrice.product_url ? `${lgAffiliateBase}?ulp=${encodeURIComponent(lgPrice.product_url)}` : lgAffiliateBase;
-    window.open(link, '_blank');
+    if (lgPrice && lgPrice.vendors) {
+      window.open(`/git/${product.id}?vendor=${lgPrice.vendor_id || lgPrice.vendors.id}`, '_blank');
+    }
   };
 
   return (
