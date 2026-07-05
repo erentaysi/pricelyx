@@ -42,11 +42,19 @@ const nextConfig = {
       },
       {
         protocol: 'https',
-        hostname: 'images.unsplash.com',
+        hostname: '**.unsplash.com',
       },
       {
         protocol: 'https',
-        hostname: 'source.unsplash.com',
+        hostname: 'cdn.shopify.com',
+      },
+      {
+        protocol: 'https',
+        hostname: '**.e-bebek.com',
+      },
+      {
+        protocol: 'https',
+        hostname: '**.toyzzshop.com',
       }
     ],
   },
