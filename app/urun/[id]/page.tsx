@@ -2,7 +2,7 @@ import { redirect, permanentRedirect, notFound } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import { extractIdFromSlug } from '@/lib/utils';
 
-export const dynamic = 'force-dynamic';
+export const revalidate = 3600;
 
 export default async function UrunRedirect({ params }: { params: { id: string } }) {
   const actualId = extractIdFromSlug(params.id);

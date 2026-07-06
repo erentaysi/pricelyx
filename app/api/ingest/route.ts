@@ -159,6 +159,12 @@ export async function POST(request: Request) {
       }
     }
 
+    // On-Demand Revalidation: Fiyatlar güncellendiği için ürün ve kategori sayfalarını cache'ten temizle
+    const { revalidatePath } = require('next/cache');
+    revalidatePath('/urunler/[slug]', 'page');
+    revalidatePath('/kategori/[slug]', 'page');
+    revalidatePath('/', 'page');
+
     return NextResponse.json({ 
       success: true, 
       message: `${processedCount} adet ürün Apify üzerinden başarıyla veritabanına yutuldu ve fiyatları güncellendi!`

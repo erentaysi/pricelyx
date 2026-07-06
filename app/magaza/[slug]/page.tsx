@@ -5,7 +5,7 @@ import ProductCard from "@/app/components/ProductCard";
 import FilterSidebar from "@/app/urunler/FilterSidebar";
 import { generateSeoSlug } from "@/lib/utils";
 
-export const dynamic = "force-dynamic";
+export const revalidate = 3600;
 
 export async function generateMetadata({ params }: { params: { slug: string } }): Promise<Metadata> {
   const { data: allVendors } = await supabase.from("vendors").select("name");

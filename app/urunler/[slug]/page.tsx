@@ -24,7 +24,7 @@ import Image from 'next/image';
 
 import { Metadata } from 'next';
 
-export const dynamic = 'force-dynamic';
+export const revalidate = 3600;
 
 export async function generateMetadata({ params }: { params: { slug: string } }): Promise<Metadata> {
   const { data: product } = await supabase

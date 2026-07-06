@@ -4,7 +4,7 @@ import { Metadata } from "next";
 import ProductCard from "@/app/components/ProductCard";
 import FilterSidebar from "@/app/urunler/FilterSidebar";
 
-export const dynamic = "force-dynamic";
+export const revalidate = 3600;
 
 export async function generateMetadata({ params }: { params: { slug: string } }): Promise<Metadata> {
   const { data: category } = await supabase
@@ -92,7 +92,19 @@ export default async function KategoriPage({ params, searchParams }: { params: {
     "@type": "CollectionPage",
     name: category.name,
     description: `En iyi ${category.name} fiyatları ve indirimleri`,
-    url: `https://piinti.com/kategori/${category.slug}`
+    url: `https://piinti.com/kategori/${category.slug}`,
+    mainEntity: {
+      "@type": "ItemList",
+      itemListElement: filteredProducts.map((p: any, index: number) => ({
+        "@type": "ListItem",
+        position: index + 1,
+        item: {
+          "@type": "Product",
+          url: `https://piinti.com/urunler/${p.slug}`,
+          name: p.title
+        }
+      }))
+    }
   };
 
   return (
