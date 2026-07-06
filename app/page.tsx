@@ -40,7 +40,7 @@ export default async function Home() {
       .select(`
         id, title, image_url, rating, reviews_count, is_trend, category_id,
         brands (name),
-        product_prices (price, original_price)
+        product_prices (price, original_price, vendor_id, vendors(id, name))
       `)
       .order('created_at', { ascending: false })
       .limit(500)

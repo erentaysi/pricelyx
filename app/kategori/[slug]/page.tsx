@@ -44,7 +44,7 @@ export default async function KategoriPage({ params, searchParams }: { params: {
     *,
     brands${brand ? "!inner" : ""}(name),
     categories!inner(name, slug),
-    product_prices(price),
+    product_prices(price, vendor_id, vendors(id, name)),
     price_history(price, recorded_at)
   `).eq("categories.slug", params.slug).order("created_at", { ascending: false });
 

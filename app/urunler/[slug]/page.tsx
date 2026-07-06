@@ -81,7 +81,8 @@ export default async function UrunDetay({ params }: { params: { slug: string } }
         shipping_info,
         product_url,
         in_stock,
-        vendors (name, logo, color)
+        vendor_id,
+        vendors (id, name, logo, color)
       ),
       price_history (
         id,

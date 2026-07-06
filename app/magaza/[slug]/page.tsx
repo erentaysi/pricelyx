@@ -39,7 +39,7 @@ export default async function MagazaPage({ params, searchParams }: { params: { s
     *,
     brands${brand ? "!inner" : ""}(name),
     categories${cat ? "!inner" : ""}(name, slug),
-    product_prices!inner(price, vendor_id),
+    product_prices!inner(price, vendor_id, vendors(id, name)),
     price_history(price, recorded_at)
   `).eq("product_prices.vendor_id", vendor.id).order("created_at", { ascending: false });
 

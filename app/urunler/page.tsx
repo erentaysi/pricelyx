@@ -39,7 +39,7 @@ export default async function UrunlerPage({ searchParams }: { searchParams: { q?
     *,
     brands${brand ? '!inner' : ''}(name),
     categories!inner(name, slug),
-    product_prices(price),
+    product_prices(price, vendor_id, vendors(id, name)),
     price_history(price, recorded_at)
   `).order('created_at', { ascending: false });
 

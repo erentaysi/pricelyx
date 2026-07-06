@@ -39,7 +39,7 @@ export default async function MarkaPage({ params, searchParams }: { params: { sl
     *,
     brands!inner(name),
     categories${cat ? "!inner" : ""}(name, slug),
-    product_prices(price),
+    product_prices(price, vendor_id, vendors(id, name)),
     price_history(price, recorded_at)
   `).eq("brands.name", brand.name).order("created_at", { ascending: false });
 
