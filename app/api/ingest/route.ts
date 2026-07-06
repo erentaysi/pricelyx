@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase';
+import { generateProductSlug } from '@/lib/utils';
 
 export const dynamic = 'force-dynamic';
 
@@ -93,7 +94,11 @@ export async function POST(request: Request) {
           reviews_count: item.reviewsCount || item.ratingsTotal || 150,
           is_trend: item.isTrend || true
         }).select().single();
-        if (newProd) finalProductId = newProd.id;
+        if (newProd) {
+          finalProductId = newProd.id;
+          const generatedSlug = generateProductSlug(cleanTitle, newProd.id);
+          await supabase.from('products').update({ slug: generatedSlug }).eq('id', newProd.id);
+        }
       }
 
       // 3. Satıcıyı Belirle (URL üzerinden otomatik tahmin)
