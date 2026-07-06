@@ -41,7 +41,7 @@ export async function GET(
     return NextResponse.redirect(new URL(`/urun/${productId}`, request.url), 307);
   }
 
-  const vendorName = priceData.vendors?.name || '';
+  const vendorName = (priceData.vendors as any)?.name || '';
   const finalUrl = generateAffiliateLink(vendorName, priceData.product_url, priceData.affiliate_url);
   const isAff = isAffiliateLink(vendorName, priceData.affiliate_url);
 

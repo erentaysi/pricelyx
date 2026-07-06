@@ -453,6 +453,7 @@ export default async function UrunDetay({ params }: { params: { slug: string } }
               Kullanıcı yorumları, teknik özellikleri ve mağaza güvenilirlik puanlarını inceleyerek <em>{brandName}</em> marka bu modeli en güvenli ve en uygun fiyata satın alabilirsiniz.
             </p>
           </div>
+        </div>
 
         {/* INTERNAL LINKING (SEO) */}
         <div className="mt-12 mb-8 pt-8 border-t border-slate-200 max-w-7xl mx-auto px-6">
