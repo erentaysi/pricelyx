@@ -35,11 +35,11 @@ export async function GET(
     return NextResponse.redirect('https://www.piinti.com');
   }
 
-  const { finalUrl, isAffiliateLink: isAff } = generateAffiliateLink({
-    vendorName: (priceData.vendors as any).name,
-    productUrl: priceData.product_url,
-    affiliateUrl: (priceData.vendors as any).affiliate_url,
-  });
+  const vendorName = (priceData.vendors as any).name;
+  const affiliateUrl = (priceData.vendors as any).affiliate_url;
+  
+  const finalUrl = generateAffiliateLink(vendorName, priceData.product_url, affiliateUrl);
+  const isAff = isAffiliateLink(vendorName, affiliateUrl);
 
   // Basic Click Tracking
   let sessionId = request.cookies.get('piinti_session')?.value;
