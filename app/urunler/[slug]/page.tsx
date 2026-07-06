@@ -226,7 +226,7 @@ export default async function UrunDetay({ params }: { params: { slug: string } }
                <div className="w-full h-full flex items-center justify-center relative z-10">
                  {(!product.image_url || !(product.image_url?.startsWith('http') || product.image_url?.includes('data:image'))) ? (
                     <div className="relative w-full h-full opacity-60 mix-blend-multiply transition-opacity duration-700 hover:opacity-100">
-                      <Image src="/placeholder.png" alt="Görsel Bekleniyor" fill priority className="object-contain p-8" />
+                      <Image src="/logo.png" alt="Görsel Bekleniyor" fill priority className="object-contain p-8" />
                     </div>
                  ) : (
                     <div className="relative w-full h-full">
@@ -305,7 +305,7 @@ export default async function UrunDetay({ params }: { params: { slug: string } }
                 
                 {/* SEO Invisible Chart Image for Indexing */}
                 <img 
-                  src={product.image_url?.replace('http://', 'https://') || '/placeholder.png'} 
+                  src={product.image_url?.replace('http://', 'https://') || '/logo.png'} 
                   alt={`${product.title} fiyat geçmişi ve değişim grafiği`}
                   className="hidden" 
                   aria-hidden="true" 
