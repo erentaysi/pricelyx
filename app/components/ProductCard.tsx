@@ -44,7 +44,7 @@ export default function ProductCard({ product }: ProductCardProps) {
         <div className="relative h-56 bg-slate-50 flex items-center justify-center overflow-hidden p-8">
           {(!product.image_url || !(product.image_url?.startsWith('http') || product.image_url?.includes('data:image'))) ? (
             <div className="relative w-full h-full opacity-60 mix-blend-multiply group-hover:opacity-100 transition-opacity duration-500">
-              <Image src="/logo.png" alt="Görsel Bekleniyor" fill className="object-contain p-4" loading="lazy" />
+              <Image src="/logo.jpg" alt="Görsel Bekleniyor" fill className="object-contain p-4" loading="lazy" />
             </div>
           ) : (
             <div className="relative w-full h-full">
