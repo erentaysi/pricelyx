@@ -6,6 +6,7 @@ import Link from 'next/link';
 import PriceHistoryChart from '@/app/components/PriceHistoryChart';
 import PriceAlertModal from '@/app/components/PriceAlertModal';
 import ReviewSummary from '@/app/components/ReviewSummary';
+import PriceBadges from '@/app/components/PriceBadges';
 import FavoriteButton from '@/app/components/FavoriteButton';
 import { 
   Star, 
@@ -87,7 +88,8 @@ export default async function UrunDetay({ params }: { params: { slug: string } }
       price_history (
         id,
         price,
-        recorded_at
+        recorded_at,
+        vendors (name)
       )
     `)
     .eq('slug', params.slug)
@@ -96,6 +98,14 @@ export default async function UrunDetay({ params }: { params: { slug: string } }
   if (!product) {
     notFound();
   }
+
+  // Gerçek yorumları çek — sahte veri KULLANILMAZ
+  const { data: realReviews } = await supabase
+    .from('product_reviews')
+    .select('id, user_name, rating, comment, created_at')
+    .eq('product_id', product.id)
+    .order('created_at', { ascending: false })
+    .limit(20);
 
   const categoryObj: any = Array.isArray(product.categories) ? product.categories[0] : product.categories;
   const categoryName = categoryObj?.name;
@@ -276,7 +286,7 @@ export default async function UrunDetay({ params }: { params: { slug: string } }
             </div>
 
             {/* Lowest Price Banner */}
-            <div className="bg-slate-900 p-8 rounded-[2rem] mb-10 flex flex-col sm:flex-row items-start sm:items-center justify-between shadow-2xl shadow-slate-900/10 border border-slate-800 gap-8">
+            <div className="bg-slate-900 p-8 rounded-[2rem] mb-4 flex flex-col sm:flex-row items-start sm:items-center justify-between shadow-2xl shadow-slate-900/10 border border-slate-800 gap-8">
               <div>
                 <p className="text-xs font-bold text-slate-500 mb-2 uppercase tracking-widest">En Rekabetçi Fiyat</p>
                 <p className="text-5xl font-black text-white tracking-tighter">{lowestPrice > 0 ? trPrice(lowestPrice) : 'Fiyat Yok'}</p>
@@ -290,6 +300,13 @@ export default async function UrunDetay({ params }: { params: { slug: string } }
                 )}
               </div>
             </div>
+
+            {/* Dinamik Fiyat Rozetleri — price_history'den gerçek hesaplama */}
+            <PriceBadges
+              priceHistory={product.price_history || []}
+              currentPrice={lowestPrice}
+              windowDays={30}
+            />
 
             {/* FİYAT GEÇMİŞİ */}
             <div className="bg-white p-8 rounded-[2rem] mb-10 border border-slate-100 shadow-xl shadow-slate-100/50 relative overflow-hidden">
@@ -346,7 +363,9 @@ export default async function UrunDetay({ params }: { params: { slug: string } }
             })()}
 
             <h2 className="text-xl font-black text-slate-900 mb-6 flex items-center gap-3 uppercase tracking-tight">
-               Fiyat Karşılaştırması <span className="bg-slate-100 text-slate-500 text-[10px] px-3 py-1 rounded-full font-black tracking-widest">{sortedPrices.length} MAĞAZA</span>
+               {sortedPrices.length > 0
+                 ? <>{sortedPrices.length} Fiyatı İncele <span className="bg-emerald-50 text-emerald-700 text-[10px] px-3 py-1 rounded-full font-black tracking-widest border border-emerald-100">{sortedPrices.length} MAĞAZA</span></>
+                 : <>Fiyat Karşılaştırması <span className="bg-slate-100 text-slate-500 text-[10px] px-3 py-1 rounded-full font-black tracking-widest">MAĞAZA YOK</span></>}
             </h2>
             
             <div className="bg-white shadow-2xl shadow-slate-200/50 border border-slate-100 rounded-[2rem] overflow-hidden">
@@ -403,7 +422,8 @@ export default async function UrunDetay({ params }: { params: { slug: string } }
           </div>
         </div>
 
-        <ReviewSummary productId={product.id} />
+        {/* ReviewSummary — gerçek veritabanı yorumları geçilir; yorum yoksa dürüst boş durum gösterilir */}
+        <ReviewSummary productId={product.id} reviews={realReviews || []} />
 
         {/* Specs and Analytics Section */}
         <div className="mt-24 border-t border-slate-200 pt-24 grid md:grid-cols-2 gap-20">

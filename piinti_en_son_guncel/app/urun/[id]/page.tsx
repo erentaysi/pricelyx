@@ -356,7 +356,7 @@ export default async function UrunDetay({ params }: { params: { id: string } }) 
           </div>
         </div>
 
-        <ReviewSummary productId={product.id} />
+        <ReviewSummary productId={product.id} reviews={[]} />
 
         {/* Specs and Analytics Section */}
         <div className="mt-24 border-t border-slate-200 pt-24 grid md:grid-cols-2 gap-20">

@@ -13,35 +13,72 @@ export async function GET(
   const searchParams = request.nextUrl.searchParams;
   const vendorIdParam = searchParams.get('vendor');
 
+  // ── Parametre Doğrulama ───────────────────────────────────────────────────
   if (!productId || !vendorIdParam) {
-    return NextResponse.redirect('https://www.piinti.com');
+    console.error('[git/redirect] Eksik parametre:', { productId, vendorIdParam });
+    return NextResponse.redirect(
+      new URL(`/hata?kod=eksik-parametre`, request.nextUrl.origin),
+      307
+    );
   }
 
-  // Fetch product and vendor info
-  let query = supabase
+  const vendorIdInt = parseInt(vendorIdParam, 10);
+  if (isNaN(vendorIdInt)) {
+    console.error('[git/redirect] Geçersiz vendor_id:', vendorIdParam);
+    return NextResponse.redirect(
+      new URL(`/hata?kod=gecersiz-vendor`, request.nextUrl.origin),
+      307
+    );
+  }
+
+  // ── Fiyat + Satıcı Kaydını Çek ───────────────────────────────────────────
+  // NOT: affiliate_url kolonu vendors tablosunda olmayabilir.
+  // Önce product_prices'taki product_url'i çekiyoruz, vendors join'ini ayrı yapıyoruz.
+  const { data: priceData, error: priceError } = await supabase
     .from('product_prices')
-    .select(`
-      vendor_id,
-      product_url,
-      vendors!inner(name, affiliate_url)
-    `)
+    .select('vendor_id, product_url')
     .eq('product_id', productId)
-    .eq('vendor_id', parseInt(vendorIdParam));
+    .eq('vendor_id', vendorIdInt)
+    .limit(1)
+    .single();
 
-  const { data: priceData, error } = await query.limit(1).single();
-
-  if (error || !priceData) {
-    console.error('Redirect error or not found:', error);
-    return NextResponse.redirect('https://www.piinti.com');
+  if (priceError || !priceData) {
+    console.error('[git/redirect] product_prices kaydı bulunamadı:', {
+      productId,
+      vendorId: vendorIdInt,
+      error: priceError?.message,
+    });
+    // Kullanıcıya anasayfaya sessizce atmak yerine açıklayıcı hata sayfası göster
+    return NextResponse.redirect(
+      new URL(`/hata?kod=magaza-bulunamadi&urun=${productId}`, request.nextUrl.origin),
+      307
+    );
   }
 
-  const vendorName = (priceData.vendors as any).name;
-  const affiliateUrl = (priceData.vendors as any).affiliate_url;
-  
-  const finalUrl = generateAffiliateLink(vendorName, priceData.product_url, affiliateUrl);
+  const productUrl = priceData.product_url;
+
+  if (!productUrl || !productUrl.startsWith('http')) {
+    console.error('[git/redirect] Geçersiz product_url:', productUrl);
+    return NextResponse.redirect(
+      new URL(`/hata?kod=gecersiz-url&urun=${productId}`, request.nextUrl.origin),
+      307
+    );
+  }
+
+  // ── Satıcı Bilgisini Çek (affiliate_url opsiyonel) ───────────────────────
+  const { data: vendorData } = await supabase
+    .from('vendors')
+    .select('name, affiliate_url')
+    .eq('id', vendorIdInt)
+    .maybeSingle();
+
+  const vendorName = vendorData?.name || 'Bilinmiyor';
+  const affiliateUrl = (vendorData as any)?.affiliate_url ?? null;
+
+  const finalUrl = generateAffiliateLink(vendorName, productUrl, affiliateUrl);
   const isAff = isAffiliateLink(vendorName, affiliateUrl);
 
-  // Basic Click Tracking
+  // ── Click Tracking ────────────────────────────────────────────────────────
   let sessionId = request.cookies.get('piinti_session')?.value;
   let isNewSession = false;
   if (!sessionId) {
@@ -52,27 +89,28 @@ export async function GET(
   const userAgent = request.headers.get('user-agent') || '';
   const referrer = request.headers.get('referer') || '';
 
-  // Vercel serverless functions will kill the context if we don't await this
+  // Fire-and-forget click kaydı (await: Vercel context kapanmasın diye zorunlu)
   await supabase.from('clicks').insert({
     product_id: productId,
     vendor_id: priceData.vendor_id,
     user_agent: userAgent,
     referrer: referrer,
     session_id: sessionId,
-    is_affiliate: isAff
+    is_affiliate: isAff,
+  }).then(({ error: clickErr }) => {
+    if (clickErr) console.error('[git/redirect] Click kaydı hatası:', clickErr.message);
   });
 
+  // ── Yönlendirme ──────────────────────────────────────────────────────────
   const response = NextResponse.redirect(finalUrl, 307);
 
-  // Set the cookie if new
   if (isNewSession) {
-    // Set cookie for 1 year
     response.cookies.set('piinti_session', sessionId, {
       maxAge: 60 * 60 * 24 * 365,
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',
-      path: '/'
+      path: '/',
     });
   }
 
