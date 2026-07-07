@@ -6,6 +6,10 @@ export const dynamic = 'force-dynamic';
 export async function POST(request: Request) {
   try {
     // Güvenlik Koruması (Sadece Yetkili Erişim)
+    if (process.env.NODE_ENV === 'production') {
+      return NextResponse.json({ error: 'Production ortamında bu endpoint devre dışıdır.' }, { status: 403 });
+    }
+
     const authHeader = request.headers.get('authorization');
     const secretKey = process.env.INGEST_SECRET_KEY;
     
