@@ -84,6 +84,7 @@ export default async function UrunDetay({ params }: { params: { slug: string } }
         product_url,
         in_stock,
         vendor_id,
+        last_updated_at,
         vendors (id, name, logo, color)
       ),
       price_history (
@@ -113,10 +114,21 @@ export default async function UrunDetay({ params }: { params: { slug: string } }
   const brandObj: any = Array.isArray(product.brands) ? product.brands[0] : product.brands;
   const brandName = brandObj?.name;
   
-  const prices = product.product_prices || [];
-  const lowestPrice = prices.length > 0 ? Math.min(...prices.map((p:any) => p.price)) : 0;
-  const highestPrice = prices.length > 0 ? Math.max(...prices.map((p:any) => p.price)) : 0;
-  const sortedPrices = [...prices].sort((a:any, b:any) => a.price - b.price);
+  const rawPrices = product.product_prices || [];
+  
+  const now = new Date();
+  const validPrices = rawPrices.map((p: any) => {
+    let hoursDiff = 0;
+    if (p.last_updated_at) {
+      const updatedTime = new Date(p.last_updated_at);
+      hoursDiff = (now.getTime() - updatedTime.getTime()) / (1000 * 60 * 60);
+    }
+    return { ...p, hoursDiff, isStale: hoursDiff > 48 };
+  }).filter((p: any) => p.hoursDiff <= 72); // 72 saati geçenleri arayüzden gizle
+
+  const lowestPrice = validPrices.length > 0 ? Math.min(...validPrices.map((p:any) => p.price)) : 0;
+  const highestPrice = validPrices.length > 0 ? Math.max(...validPrices.map((p:any) => p.price)) : 0;
+  const sortedPrices = [...validPrices].sort((a:any, b:any) => a.price - b.price);
 
   function trPrice(price: number) {
     return new Intl.NumberFormat('tr-TR', { maximumFractionDigits: 0 }).format(Math.round(price)) + ' ₺';
