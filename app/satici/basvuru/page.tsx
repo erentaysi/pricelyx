@@ -14,6 +14,7 @@ export default function VendorApplicationPage() {
   });
   const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
   const [errorMessage, setErrorMessage] = useState('');
+  const [isLoginMode, setIsLoginMode] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -21,7 +22,20 @@ export default function VendorApplicationPage() {
     setErrorMessage('');
 
     try {
-      // 1. Supabase Auth Kaydı
+      if (isLoginMode) {
+        // GİRİŞ YAP (LOGIN)
+        const { error: signInError } = await supabase.auth.signInWithPassword({
+          email: formData.email,
+          password: formData.password
+        });
+        if (signInError) throw signInError;
+        
+        // Giriş başarılıysa sayfayı yenile/yönlendir
+        window.location.href = '/satici/panel';
+        return;
+      }
+
+      // 1. Supabase Auth Kaydı (SIGN UP)
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email: formData.email,
         password: formData.password
@@ -134,17 +148,19 @@ export default function VendorApplicationPage() {
           )}
 
           <form onSubmit={handleSubmit} className="space-y-5">
-            <div>
-              <label className="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">Mağaza Adı</label>
-              <div className="relative">
-                <Store className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-300" />
-                <input required type="text" value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} className="w-full bg-slate-50 border border-slate-200 rounded-xl py-3 pl-12 pr-4 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all font-medium text-slate-700" placeholder="Örn: TeknoMarket" />
+            {!isLoginMode && (
+              <div>
+                <label className="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">Mağaza Adı</label>
+                <div className="relative">
+                  <Store className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-300" />
+                  <input required type="text" value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} className="w-full bg-slate-50 border border-slate-200 rounded-xl py-3 pl-12 pr-4 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all font-medium text-slate-700" placeholder="Örn: TeknoMarket" />
+                </div>
               </div>
-            </div>
+            )}
 
             <div className="grid grid-cols-2 gap-5">
               <div>
-                <label className="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">E-Posta (Giriş İçin)</label>
+                <label className="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">E-Posta</label>
                 <div className="relative">
                   <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-300" />
                   <input required type="email" value={formData.email} onChange={e => setFormData({...formData, email: e.target.value})} className="w-full bg-slate-50 border border-slate-200 rounded-xl py-3 pl-12 pr-4 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all font-medium text-slate-700" placeholder="ornek@magaza.com" />
@@ -158,30 +174,44 @@ export default function VendorApplicationPage() {
               </div>
             </div>
 
-            <div>
-              <label className="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">XML Feed Linki</label>
-              <div className="relative">
-                <Link className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-300" />
-                <input required type="url" value={formData.xmlUrl} onChange={e => setFormData({...formData, xmlUrl: e.target.value})} className="w-full bg-slate-50 border border-slate-200 rounded-xl py-3 pl-12 pr-4 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all font-medium text-slate-700" placeholder="https://magaza.com/export/xml" />
-              </div>
-              <p className="text-[10px] text-slate-400 mt-2 font-medium">Lütfen dışarıdan erişilebilir (public) ve şifresiz bir XML URL'si girin.</p>
-            </div>
+            {!isLoginMode && (
+              <>
+                <div>
+                  <label className="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">XML Feed Linki</label>
+                  <div className="relative">
+                    <Link className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-300" />
+                    <input required type="url" value={formData.xmlUrl} onChange={e => setFormData({...formData, xmlUrl: e.target.value})} className="w-full bg-slate-50 border border-slate-200 rounded-xl py-3 pl-12 pr-4 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all font-medium text-slate-700" placeholder="https://magaza.com/export/xml" />
+                  </div>
+                  <p className="text-[10px] text-slate-400 mt-2 font-medium">Lütfen dışarıdan erişilebilir (public) ve şifresiz bir XML URL'si girin.</p>
+                </div>
 
-            <div>
-              <label className="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">Vergi Numarası / VKN</label>
-              <div className="relative">
-                <FileText className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-300" />
-                <input required type="text" value={formData.taxId} onChange={e => setFormData({...formData, taxId: e.target.value})} className="w-full bg-slate-50 border border-slate-200 rounded-xl py-3 pl-12 pr-4 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all font-medium text-slate-700" placeholder="VKN veya TC Kimlik No" />
-              </div>
-            </div>
+                <div>
+                  <label className="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">Vergi Numarası / VKN</label>
+                  <div className="relative">
+                    <FileText className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-300" />
+                    <input required type="text" value={formData.taxId} onChange={e => setFormData({...formData, taxId: e.target.value})} className="w-full bg-slate-50 border border-slate-200 rounded-xl py-3 pl-12 pr-4 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all font-medium text-slate-700" placeholder="VKN veya TC Kimlik No" />
+                  </div>
+                </div>
+              </>
+            )}
 
             <button 
               type="submit" 
               disabled={status === 'loading'}
               className="w-full bg-primary text-white font-black py-4 rounded-xl mt-6 hover:bg-primary/90 transition-all flex items-center justify-center gap-2 uppercase tracking-widest shadow-lg shadow-primary/20 disabled:opacity-70"
             >
-              {status === 'loading' ? 'Başvurunuz İşleniyor...' : 'Başvuruyu Gönder'} <ArrowRight className="w-5 h-5" />
+              {status === 'loading' ? 'İşleniyor...' : (isLoginMode ? 'Giriş Yap' : 'Başvuruyu Gönder')} <ArrowRight className="w-5 h-5" />
             </button>
+            
+            <div className="text-center mt-4">
+              <button 
+                type="button" 
+                onClick={() => { setIsLoginMode(!isLoginMode); setErrorMessage(''); }}
+                className="text-xs font-bold text-slate-500 hover:text-primary transition-colors uppercase tracking-widest"
+              >
+                {isLoginMode ? 'Yeni Mağaza Başvurusu Yap' : 'Zaten hesabınız var mı? Giriş Yapın'}
+              </button>
+            </div>
           </form>
         </div>
       </div>
