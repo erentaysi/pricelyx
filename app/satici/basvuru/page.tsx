@@ -10,7 +10,9 @@ export default function VendorApplicationPage() {
     email: '',
     password: '',
     xmlUrl: '',
-    taxId: ''
+    taxId: '',
+    inviteCode: '',
+    acceptedTerms: false
   });
   const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
   const [errorMessage, setErrorMessage] = useState('');
@@ -41,36 +43,11 @@ export default function VendorApplicationPage() {
         password: formData.password
       });
 
-      if (authError) throw authError;
-      if (!authData.user) throw new Error('Kullanıcı oluşturulamadı.');
-
-      // 2. Vendor Tablosuna Ekleme (status otomatik 'pending' olacak)
-      const { data: vendorData, error: vendorError } = await supabase
-        .from('vendors')
-        .insert({
-          name: formData.name,
-          xml_feed_url: formData.xmlUrl,
-          contact_email: formData.email,
-          tax_id: formData.taxId
-        })
-        .select('id')
-        .single();
-
-      if (vendorError) {
-        // İsim benzersiz (unique) ihlali vb.
-        throw new Error('Mağaza kaydı sırasında hata: ' + vendorError.message);
+      const data = await res.json();
+      
+      if (!res.ok) {
+        throw new Error(data.error || 'Başvuru sırasında bir hata oluştu.');
       }
-
-      // 3. Eşleştirme tablosuna (vendor_users) ekleme
-      const { error: vuError } = await supabase
-        .from('vendor_users')
-        .insert({
-          vendor_id: vendorData.id,
-          auth_id: authData.user.id,
-          role: 'admin'
-        });
-
-      if (vuError) throw vuError;
 
       setStatus('success');
     } catch (err: any) {
@@ -191,6 +168,22 @@ export default function VendorApplicationPage() {
                     <FileText className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-300" />
                     <input required type="text" value={formData.taxId} onChange={e => setFormData({...formData, taxId: e.target.value})} className="w-full bg-slate-50 border border-slate-200 rounded-xl py-3 pl-12 pr-4 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all font-medium text-slate-700" placeholder="VKN veya TC Kimlik No" />
                   </div>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2 text-rose-500">Özel Davetiye Kodu (Kapalı Beta)</label>
+                  <div className="relative">
+                    <input required type="text" value={formData.inviteCode} onChange={e => setFormData({...formData, inviteCode: e.target.value})} className="w-full bg-slate-50 border border-slate-200 rounded-xl py-3 px-4 focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 transition-all font-medium text-slate-700" placeholder="Beta Katılım Kodunuzu Girin" />
+                  </div>
+                </div>
+
+                <div className="flex items-start gap-3 mt-4 bg-slate-50 p-4 rounded-xl border border-slate-100">
+                  <div className="flex items-center h-5">
+                    <input required id="terms" type="checkbox" checked={formData.acceptedTerms} onChange={e => setFormData({...formData, acceptedTerms: e.target.checked})} className="w-4 h-4 border border-slate-300 rounded bg-white checked:bg-primary checked:border-primary focus:ring-2 focus:ring-primary/20 cursor-pointer" />
+                  </div>
+                  <label htmlFor="terms" className="text-xs text-slate-500 font-medium leading-relaxed cursor-pointer">
+                    <a href="#" className="text-primary hover:underline">Satıcı Çerçeve Sözleşmesi</a>'ni ve <a href="#" className="text-primary hover:underline">KVKK Aydınlatma Metni</a>'ni okudum, anladım ve kabul ediyorum. Paylaştığım bilgilerin ve XML verilerinin doğruluğunu taahhüt ederim.
+                  </label>
                 </div>
               </>
             )}

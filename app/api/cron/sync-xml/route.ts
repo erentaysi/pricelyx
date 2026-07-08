@@ -4,6 +4,24 @@ import { fetchSecureXml, parseSecureXml, sanitizeText } from '@/lib/xml-security
 
 export const dynamic = 'force-dynamic';
 
+// Discord Webhook Bildirim Yardımcısı
+async function notifyDiscord(message: string) {
+  const webhookUrl = process.env.DISCORD_WEBHOOK_URL;
+  if (!webhookUrl) return; // Webhook ayarlanmamışsa sessizce atla
+  
+  try {
+    await fetch(webhookUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        content: `🚨 **Piinti B2B Sistem Uyarısı** 🚨\n${message}`
+      })
+    });
+  } catch (err) {
+    console.error('Discord webhook gönderilemedi:', err);
+  }
+}
+
 export async function GET(request: Request) {
   // Cron güvenliği
   const authHeader = request.headers.get('authorization');
@@ -136,6 +154,11 @@ export async function GET(request: Request) {
       console.error(`[SYNC ERROR] ${vendor.name}:`, error.message);
       syncStatus = 'error';
       errorMessage = error.message;
+    }
+
+    // Kritik hatalarda anında bildirim gönder (Monitoring / Alerts)
+    if (syncStatus === 'error') {
+      await notifyDiscord(`**Mağaza:** ${vendor.name}\n**Hata:** \`${errorMessage}\`\n**Zaman:** \`${new Date().toISOString()}\`\nLütfen ilgili satıcının feed'ini kontrol edin veya hesabı \`suspended\` durumuna çekin.`);
     }
 
     // Kalıcı log kaydı
