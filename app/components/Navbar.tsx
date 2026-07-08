@@ -31,7 +31,7 @@ export default function Navbar() {
       { name: "Tüm Ürünler", href: "/urunler" },
       { name: "Kampanyalar", href: "/kampanyalar" },
       { name: "Rehber & Blog", href: "/blog" },
-      { name: "Hakkımızda", href: "/hakkimizda" },
+      { name: "Mağaza Açın", href: "/satici/basvuru" },
     ];
 
   return (
