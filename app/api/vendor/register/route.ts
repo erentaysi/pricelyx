@@ -39,61 +39,9 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Geçersiz davetiye kodu. Sistem şu an kapalı beta aşamasındadır.' }, { status: 403 });
     }
 
-    // 3. Supabase Service Role ile Güvenli İşlem
-    const supabaseAdmin = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!
-    );
-
-    // E-posta kullanımda mı? (Supabase sahte kullanıcı dönmesini engellemek için doğrudan kontrol)
-    const { data: existingUsers, error: existError } = await supabaseAdmin.auth.admin.listUsers();
-    const isEmailTaken = existingUsers?.users?.some(u => u.email === email);
-    
-    if (isEmailTaken) {
-      return NextResponse.json({ error: 'Bu e-posta adresi zaten kullanımda. Lütfen giriş yapmayı deneyin.' }, { status: 400 });
-    }
-
-    // Auth kaydı (Admin yetkisiyle)
-    const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
-      email,
-      password,
-      email_confirm: true // B2B olduğu için manuel onaylıyoruz, admin paneli onaylayana kadar giremeyecek zaten
-    });
-
-    if (authError) throw authError;
-
-    // Vendors tablosuna ekle
-    const { data: vendorData, error: vendorError } = await supabaseAdmin
-      .from('vendors')
-      .insert({
-        name,
-        xml_url: xmlUrl,
-        tax_id: taxId,
-        status: 'pending' // Admin onayı bekliyor
-      })
-      .select()
-      .single();
-
-    if (vendorError) {
-      await supabaseAdmin.auth.admin.deleteUser(authData.user.id);
-      throw vendorError;
-    }
-
-    // Yetki bağlama (vendor_users)
-    const { error: vuError } = await supabaseAdmin
-      .from('vendor_users')
-      .insert({
-        vendor_id: vendorData.id,
-        auth_id: authData.user.id,
-        role: 'admin'
-      });
-
-    if (vuError) {
-      await supabaseAdmin.auth.admin.deleteUser(authData.user.id);
-      throw vuError;
-    }
-
-    return NextResponse.json({ success: true, message: 'Başvuru alındı.' });
+    // 3. İstemci (Client) tarafında Supabase işlemlerine izin vermek için onay dön
+    // Service Role key kullanılmadığı için auth işlemleri istemcide yapılacak.
+    return NextResponse.json({ success: true, message: 'Doğrulama başarılı. İstemci kayıt yapabilir.' });
 
   } catch (error: any) {
     console.error('API /vendor/register Hatası:', error);

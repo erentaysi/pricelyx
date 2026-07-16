@@ -19,8 +19,9 @@ import {
   ChevronRight
 } from 'lucide-react';
 import ProductCard from '@/app/components/ProductCard';
+import AnimatedCounter from '@/app/components/AnimatedCounter';
 
-export const revalidate = 0; // 0 for testing, change back to 3600 later
+export const revalidate = 3600; // 1 saatlik ISR caching
 
 export default async function Home() {
   // Tüm sorguları aynı anda başlat (Promise.all) ile TTFB süresini kısaltıyoruz
@@ -114,48 +115,71 @@ export default async function Home() {
 
   return (
     <>
-      {/* Hero Section */}
-      <section className="gradient-bg text-white py-16 md:py-24">
-        <div className="container mx-auto px-4">
+      {/* Premium Hero Section */}
+      <section className="relative overflow-hidden bg-slate-900 py-24 sm:py-32">
+        {/* Background Gradients & Effects */}
+        <div className="absolute inset-0 z-0">
+          <div className="absolute inset-0 bg-[url('/noise.png')] opacity-[0.03] mix-blend-overlay"></div>
+          <div className="absolute -top-[20%] -left-[10%] w-[50%] h-[50%] rounded-full bg-primary/40 blur-[120px] mix-blend-screen"></div>
+          <div className="absolute top-[40%] -right-[10%] w-[40%] h-[60%] rounded-full bg-emerald-500/30 blur-[120px] mix-blend-screen"></div>
+        </div>
+
+        <div className="container mx-auto px-4 relative z-10">
             <div className="max-w-4xl mx-auto text-center fade-in">
-                <h1 className="text-4xl md:text-5xl font-black mb-6 text-shadow-sm leading-tight">
-                  Türkiye'nin En Gelişmiş Ürün ve Fiyat Karşılaştırma Platformu
-                </h1>
-                <p className="text-lg md:text-xl mb-10 text-white/90 font-medium">
-                    Milyonlarca ürün arasından en uygun fiyatı bul, karşılaştır, tasarruf et
-                </p>
-                <div className="max-w-2xl mx-auto items-center justify-center flex">
-                    <SearchForm />
+                
+                <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 border border-white/10 text-emerald-400 text-sm font-bold tracking-widest uppercase mb-8 shadow-2xl backdrop-blur-md">
+                  <Sparkles className="w-4 h-4" /> Yeni Nesil Akıllı Alışveriş
                 </div>
-                <div className="grid grid-cols-3 gap-4 mt-12 max-w-2xl mx-auto">
-                    <div className="text-center">
-                        <div className="text-3xl font-black">{productCount || 0}+</div><div className="text-white/80 text-sm font-medium">Ürün</div>
+
+                <h1 className="text-5xl sm:text-6xl md:text-7xl font-black mb-8 text-transparent bg-clip-text bg-gradient-to-r from-white via-slate-200 to-slate-400 leading-[1.1] tracking-tighter">
+                  Aradığın Ürün. <br/>
+                  <span className="text-primary">En Ucuz Fiyat.</span> <br/>
+                  Tek Tıkla.
+                </h1>
+                
+                <p className="text-lg md:text-xl mb-12 text-slate-400 font-medium max-w-2xl mx-auto leading-relaxed">
+                    Milyonlarca ürün, yüzlerce mağaza ve şeffaf fiyat geçmişi ile alışverişin kontrolünü elinize alın. Fazla ödemeye son verin.
+                </p>
+
+                <div className="max-w-3xl mx-auto items-center justify-center flex relative group">
+                    <div className="absolute -inset-1 bg-gradient-to-r from-primary to-emerald-500 rounded-[2.5rem] blur opacity-25 group-hover:opacity-50 transition duration-1000 group-hover:duration-200"></div>
+                    <div className="relative w-full">
+                       <SearchForm />
                     </div>
-                    <div className="text-center">
-                        <div className="text-3xl font-black">{vendorCount || 0}+</div><div className="text-white/80 text-sm font-medium">Mağaza</div>
-                    </div>
-                    <div className="text-center">
-                        <div className="text-3xl font-black">{priceCount || 0}+</div><div className="text-white/80 text-sm font-medium">Fiyat Karşılaştırması</div>
-                    </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-2 mt-16 max-w-4xl mx-auto pt-8 border-t border-white/10">
+                    <AnimatedCounter value={productCount || 0} label="Ürün" />
+                    <div className="hidden md:block w-px h-16 bg-white/10 mx-auto mt-4"></div>
+                    <AnimatedCounter value={vendorCount || 0} label="Mağaza" />
+                    <div className="hidden md:block w-px h-16 bg-white/10 mx-auto mt-4"></div>
+                    <AnimatedCounter value={priceCount || 0} label="Fiyat Analizi" />
                 </div>
             </div>
         </div>
       </section>
 
-      {/* Kompakt Kategori Menüsü (Cimri.com Stili) */}
-      <section className="py-8 bg-white border-b border-slate-100 shadow-sm sticky top-0 z-30">
+      {/* Premium Category Menu */}
+      <section className="py-6 bg-white border-b border-slate-100 shadow-[0_4px_20px_-10px_rgba(0,0,0,0.05)] sticky top-[72px] z-30">
           <div className="container mx-auto px-4">
-              <div className="flex overflow-x-auto hide-scrollbar gap-3 md:flex-wrap md:justify-center pb-2 md:pb-0">
+              <div className="flex overflow-x-auto hide-scrollbar gap-4 md:justify-center pb-2 md:pb-0 px-2">
                   {dbCategories?.map(cat => {
                       const count = productsList.filter(p => p.category_id === cat.id).length;
-                      if (count === 0) return null; // Ürünü olmayanları gizle
                       return (
-                        <Link href={`/urunler?cat=${cat.slug}`} key={cat.id} className="flex items-center gap-3 bg-slate-50 hover:bg-primary/5 hover:border-primary/20 transition-all duration-300 border border-slate-100 rounded-full px-5 py-3 whitespace-nowrap">
-                            {categoryIcons[cat.slug] || <div className="w-5 h-5 bg-gray-200 rounded-full" />}
-                            <span className="font-semibold text-slate-700 text-sm">{cat.name}</span>
-                            <span className="bg-white text-xs font-bold text-slate-500 px-2 py-0.5 rounded-full shadow-sm">{count}</span>
-                        </Link>
-                      );
+                          <Link 
+                            href={`/urunler?cat=${cat.name}`} 
+                            key={cat.id}
+                            className="flex items-center gap-3 bg-slate-50 hover:bg-primary/5 text-slate-700 hover:text-primary px-5 py-3 rounded-2xl whitespace-nowrap transition-all duration-300 border border-slate-100 hover:border-primary/20 group shadow-sm hover:shadow-md hover:-translate-y-0.5"
+                          >
+                              <div className="w-8 h-8 rounded-xl bg-white flex items-center justify-center shadow-sm border border-slate-100 group-hover:scale-110 transition-transform duration-300">
+                                {categoryIcons[cat.slug] || <Sparkles className="w-4 h-4 text-slate-400 group-hover:text-primary" />}
+                              </div>
+                              <div className="flex flex-col">
+                                <span className="text-sm font-bold">{cat.name}</span>
+                                {count > 0 && <span className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">{count} Ürün</span>}
+                              </div>
+                          </Link>
+                      )
                   })}
               </div>
           </div>
@@ -163,17 +187,28 @@ export default async function Home() {
 
       {/* Fiyatı Düşenler */}
       {discountedProducts.length > 0 && (
-        <section className="py-12 bg-rose-50/30">
-            <div className="container mx-auto px-4">
-                <div className="flex items-center gap-3 mb-8">
-                    <div className="w-10 h-10 bg-rose-100 text-rose-600 rounded-xl flex items-center justify-center shadow-sm">
-                        <TrendingDown className="w-6 h-6" />
-                    </div>
-                    <h2 className="text-2xl md:text-3xl font-black text-slate-800">Fiyatı Düşenler</h2>
+        <section className="py-20 relative bg-slate-50">
+            <div className="absolute inset-0 bg-gradient-to-b from-white to-transparent h-40"></div>
+            <div className="container mx-auto px-4 relative z-10">
+                <div className="flex flex-col md:flex-row md:items-end justify-between mb-12 gap-4">
+                  <div className="flex items-center gap-4">
+                      <div className="w-14 h-14 bg-rose-100 text-rose-600 rounded-2xl flex items-center justify-center shadow-lg shadow-rose-100/50">
+                          <TrendingDown className="w-7 h-7" />
+                      </div>
+                      <div>
+                        <h2 className="text-3xl md:text-4xl font-black text-slate-900 tracking-tight">Büyük Fırsatlar</h2>
+                        <p className="text-slate-500 font-medium mt-1">Fiyatı son 24 saatte sert düşüş yaşayan ürünler</p>
+                      </div>
+                  </div>
+                  <Link href="/urunler?sort=discount" className="text-rose-600 font-bold hover:text-rose-700 flex items-center gap-1 px-6 py-3 rounded-full bg-white border border-rose-100 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all">
+                      Tüm Fırsatları Gör <ChevronRight className="w-4 h-4" />
+                  </Link>
                 </div>
-                <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
                     {discountedProducts.map((product: any) => (
-                        <ProductCard key={product.id} product={product} />
+                        <div key={product.id} className="transform transition-all duration-300 hover:-translate-y-2">
+                           <ProductCard product={product} />
+                        </div>
                     ))}
                 </div>
             </div>
@@ -182,17 +217,24 @@ export default async function Home() {
 
       {/* Günün Trendleri */}
       {trendProducts.length > 0 && (
-        <section className="py-12 bg-white">
-            <div className="container mx-auto px-4">
-                <div className="flex items-center gap-3 mb-8">
-                    <div className="w-10 h-10 bg-orange-100 text-orange-600 rounded-xl flex items-center justify-center shadow-sm">
-                        <Flame className="w-6 h-6" />
-                    </div>
-                    <h2 className="text-2xl md:text-3xl font-black text-slate-800">Günün Trendleri</h2>
+        <section className="py-20 relative bg-white border-t border-slate-100">
+            <div className="container mx-auto px-4 relative z-10">
+                <div className="flex flex-col md:flex-row md:items-end justify-between mb-12 gap-4">
+                  <div className="flex items-center gap-4">
+                      <div className="w-14 h-14 bg-gradient-to-br from-orange-400 to-rose-500 text-white rounded-2xl flex items-center justify-center shadow-lg shadow-orange-200">
+                          <Flame className="w-7 h-7" />
+                      </div>
+                      <div>
+                        <h2 className="text-3xl md:text-4xl font-black text-slate-900 tracking-tight">Günün Trendleri</h2>
+                        <p className="text-slate-500 font-medium mt-1">Şu an en çok incelenen ve popüler ürünler</p>
+                      </div>
+                  </div>
                 </div>
-                <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
                     {trendProducts.map((product: any) => (
-                        <ProductCard key={product.id} product={product} />
+                        <div key={product.id} className="transform transition-all duration-300 hover:-translate-y-2">
+                           <ProductCard product={product} />
+                        </div>
                     ))}
                 </div>
             </div>

@@ -37,16 +37,26 @@ export default function VendorApplicationPage() {
         return;
       }
 
-      // 1. Supabase Auth Kaydı (SIGN UP)
-      const { data: authData, error: authError } = await supabase.auth.signUp({
-        email: formData.email,
-        password: formData.password
+      // 1. Backend API'ye Başvuru İsteği At (SIGN UP)
+      const response = await fetch('/api/vendor/signup', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          email: formData.email,
+          password: formData.password,
+          name: formData.name,
+          xmlUrl: formData.xmlUrl,
+          taxId: formData.taxId,
+          inviteCode: formData.inviteCode
+        })
       });
 
-      const data = await res.json();
-      
-      if (!res.ok) {
-        throw new Error(data.error || 'Başvuru sırasında bir hata oluştu.');
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.error || 'Başvuru sırasında bir hata oluştu.');
       }
 
       setStatus('success');

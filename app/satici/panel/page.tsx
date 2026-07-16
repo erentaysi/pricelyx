@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useRouter } from 'next/navigation';
+import Image from 'next/image';
 import { Store, AlertTriangle, CheckCircle, Clock, Activity, FileWarning, RefreshCw } from 'lucide-react';
 
 export default function VendorDashboardPage() {
@@ -10,6 +11,9 @@ export default function VendorDashboardPage() {
   const [loading, setLoading] = useState(true);
   const [vendorData, setVendorData] = useState<any>(null);
   const [logs, setLogs] = useState<any[]>([]);
+  const [isEditing, setIsEditing] = useState(false);
+  const [formData, setFormData] = useState({ xml_feed_url: '', logo: '', color: '' });
+  const [saveStatus, setSaveStatus] = useState<'idle'|'saving'|'success'|'error'>('idle');
 
   useEffect(() => {
     async function loadDashboard() {
@@ -43,6 +47,11 @@ export default function VendorDashboardPage() {
         }
 
         setVendorData(vData);
+        setFormData({
+          xml_feed_url: vData.xml_feed_url || '',
+          logo: vData.logo || '',
+          color: vData.color || '#cbd5e1'
+        });
 
         // 3. Kalıcı Logları getir (Son 50 işlem)
         const { data: logData } = await supabase
@@ -70,6 +79,29 @@ export default function VendorDashboardPage() {
 
   if (!vendorData) {
     return <div className="min-h-screen flex items-center justify-center bg-slate-50 text-rose-500 font-bold">Yetkisiz Erişim.</div>;
+  }
+
+  async function handleSaveProfile(e: React.FormEvent) {
+    e.preventDefault();
+    setSaveStatus('saving');
+    try {
+      const { error } = await supabase
+        .from('vendors')
+        .update({
+          xml_feed_url: formData.xml_feed_url,
+          logo: formData.logo,
+          color: formData.color
+        })
+        .eq('id', vendorData.id);
+
+      if (error) throw error;
+      setVendorData({ ...vendorData, ...formData });
+      setSaveStatus('success');
+      setTimeout(() => { setSaveStatus('idle'); setIsEditing(false); }, 2000);
+    } catch (err) {
+      console.error('Update Error:', err);
+      setSaveStatus('error');
+    }
   }
 
   // Durum Yönetimi (Pending / Suspended Kilitleri)
@@ -168,6 +200,97 @@ export default function VendorDashboardPage() {
                 </tbody>
               </table>
             </div>
+          </div>
+
+          {/* Profil Ayarları */}
+          <div className="bg-white p-8 rounded-[2rem] shadow-sm border border-slate-100">
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-xl font-black text-slate-900 flex items-center gap-2">Mağaza Ayarları</h2>
+              <button 
+                onClick={() => setIsEditing(!isEditing)}
+                className="text-sm font-bold text-primary hover:underline"
+              >
+                {isEditing ? 'İptal' : 'Düzenle'}
+              </button>
+            </div>
+            
+            {isEditing ? (
+              <form onSubmit={handleSaveProfile} className="space-y-4">
+                <div>
+                  <label className="block text-xs font-bold text-slate-500 uppercase mb-1">XML Feed URL</label>
+                  <input 
+                    type="url" 
+                    value={formData.xml_feed_url} 
+                    onChange={e => setFormData({...formData, xml_feed_url: e.target.value})}
+                    placeholder="https://siteniz.com/export/piinti.xml"
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all"
+                  />
+                  <p className="text-[10px] text-slate-400 mt-1">Standart e-ticaret XML veya JSON linkinizi girin.</p>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Logo URL</label>
+                    <input 
+                      type="url" 
+                      value={formData.logo} 
+                      onChange={e => setFormData({...formData, logo: e.target.value})}
+                      className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Marka Rengi</label>
+                    <div className="flex items-center gap-2">
+                      <input 
+                        type="color" 
+                        value={formData.color} 
+                        onChange={e => setFormData({...formData, color: e.target.value})}
+                        className="w-12 h-11 bg-slate-50 border border-slate-200 rounded-xl cursor-pointer"
+                      />
+                      <input 
+                        type="text" 
+                        value={formData.color} 
+                        onChange={e => setFormData({...formData, color: e.target.value})}
+                        className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all"
+                      />
+                    </div>
+                  </div>
+                </div>
+                <button 
+                  type="submit" 
+                  disabled={saveStatus === 'saving'}
+                  className="w-full bg-slate-900 text-white font-bold py-3 rounded-xl hover:bg-slate-800 transition-colors disabled:opacity-50"
+                >
+                  {saveStatus === 'saving' ? 'Kaydediliyor...' : saveStatus === 'success' ? 'Kaydedildi ✓' : 'Ayarları Kaydet'}
+                </button>
+                {saveStatus === 'error' && <p className="text-xs text-rose-500 text-center font-medium mt-2">Kaydedilirken hata oluştu. Linkleri kontrol edin.</p>}
+              </form>
+            ) : (
+              <div className="space-y-4">
+                <div>
+                  <p className="text-[10px] uppercase tracking-widest text-slate-400 font-bold">XML Feed URL</p>
+                  <p className="text-sm font-medium text-slate-700 break-all">{vendorData.xml_feed_url || 'Henüz eklenmemiş'}</p>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <p className="text-[10px] uppercase tracking-widest text-slate-400 font-bold">Logo</p>
+                    {vendorData.logo ? (
+                      <div className="relative h-10 w-32 mt-1">
+                        <Image src={vendorData.logo} alt="Logo" fill className="object-contain" />
+                      </div>
+                    ) : (
+                      <p className="text-sm text-slate-500 mt-1">Eklenmemiş</p>
+                    )}
+                  </div>
+                  <div>
+                    <p className="text-[10px] uppercase tracking-widest text-slate-400 font-bold">Marka Rengi</p>
+                    <div className="flex items-center gap-2 mt-1">
+                      <div className="w-6 h-6 rounded-full shadow-sm border border-slate-200" style={{ backgroundColor: vendorData.color }}></div>
+                      <p className="text-sm text-slate-700 uppercase font-medium">{vendorData.color || '#cbd5e1'}</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         </div>
 

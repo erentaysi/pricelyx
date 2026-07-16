@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0" xmlns:g="http://base.google.com/ns/1.0">
+  <channel>
+    <title>Test Magazası XML Feed</title>
+    <link>https://testmagazasi.com</link>
+    
+    <item>
+      <g:id>TEST-001</g:id>
+      <g:title>Prima Premium Care 4 Beden Bebek Bezi 126 Adet</g:title>
+      <g:price>749.99 TRY</g:price>
+      <g:link>https://testmagazasi.com/prima-4-beden</g:link>
+      <g:image_link>https://testmagazasi.com/images/prima.jpg</g:image_link>
+    </item>
+
+    <item>
+      <g:id>TEST-002</g:id>
+      <g:title>Sleepy Natural 5 Beden Külot Bez 100 Adet</g:title>
+      <g:price>499.50 TRY</g:price>
+      <g:link>https://testmagazasi.com/sleepy-5-beden</g:link>
+      <g:image_link>https://testmagazasi.com/images/sleepy.jpg</g:image_link>
+    </item>
+
+    <item>
+      <g:id>TEST-003</g:id>
+      <g:title>Maclaren Quest Bebek Arabası Siyah</g:title>
+      <g:price>15499.00 TRY</g:price>
+      <g:link>https://testmagazasi.com/maclaren-araba</g:link>
+      <g:image_link>https://testmagazasi.com/images/maclaren.jpg</g:image_link>
+    </item>
+
+  </channel>
+</rss>

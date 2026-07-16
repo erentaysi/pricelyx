@@ -76,26 +76,43 @@ export default async function UrunDetay({ params }: { params: { slug: string } }
       *,
       asin,
       brands (name),
-      categories (name),
-      product_prices (
-        price,
-        original_price,
-        shipping_info,
-        product_url,
-        in_stock,
-        vendor_id,
-        last_updated_at,
-        vendors (id, name, logo, color)
-      ),
-      price_history (
-        id,
-        price,
-        recorded_at,
-        vendors (name)
-      )
+      categories (name)
     `)
     .eq('slug', params.slug)
     .single();
+
+  if (!product) {
+    notFound();
+  }
+
+  // AŞAMA 2: Canonical Aile Tespiti (Parent-Child birleştirmesi)
+  let familyIds = [product.id];
+  if (product.canonical_id) {
+    // Bu ürün bir child ise, parent'ı ve diğer child'ları bul
+    const { data: siblings } = await supabase.from('products').select('id').eq('canonical_id', product.canonical_id);
+    familyIds.push(product.canonical_id);
+    if (siblings) siblings.forEach((s: any) => familyIds.push(s.id));
+  } else {
+    // Bu ürün bir parent ise, child'ları bul
+    const { data: children } = await supabase.from('products').select('id').eq('canonical_id', product.id);
+    if (children) children.forEach((c: any) => familyIds.push(c.id));
+  }
+  familyIds = Array.from(new Set(familyIds)); // Tekilleştir
+
+  // Tüm ailenin güncel fiyatlarını çek
+  const { data: familyPrices } = await supabase
+    .from('product_prices')
+    .select(`
+      price, original_price, shipping_info, product_url, in_stock, vendor_id, last_updated_at,
+      vendors (id, name, logo, color)
+    `)
+    .in('product_id', familyIds);
+
+  // Tüm ailenin geçmiş fiyatlarını çek
+  const { data: familyHistory } = await supabase
+    .from('price_history')
+    .select('id, price, recorded_at, vendors(name)')
+    .in('product_id', familyIds);
 
   if (!product) {
     notFound();
@@ -114,7 +131,7 @@ export default async function UrunDetay({ params }: { params: { slug: string } }
   const brandObj: any = Array.isArray(product.brands) ? product.brands[0] : product.brands;
   const brandName = brandObj?.name;
   
-  const rawPrices = product.product_prices || [];
+  const rawPrices = familyPrices || [];
   
   const now = new Date();
   const validPrices = rawPrices.map((p: any) => {
@@ -134,41 +151,60 @@ export default async function UrunDetay({ params }: { params: { slug: string } }
     return new Intl.NumberFormat('tr-TR', { maximumFractionDigits: 0 }).format(Math.round(price)) + ' ₺';
   }
 
+  const priceValidUntil = new Date();
+  priceValidUntil.setDate(priceValidUntil.getDate() + 7); // 1 haftalık geçerlilik
+  
   // JSON-LD Structured Data for Google
   const productLd = {
     '@context': 'https://schema.org',
     '@type': 'Product',
     name: product.title || 'Ürün',
-    image: product.image_url || '',
-    description: (product.title || 'Ürün') + ' en uygun fiyatlarla Piinti\'de.',
+    image: product.image_url ? [product.image_url.replace('http://', 'https://')] : undefined,
+    description: (product.title || 'Ürün') + ' modeli en ucuz fiyat seçenekleriyle Piinti\'de! Tüm mağazaların fiyatlarını tek ekranda karşılaştırın.',
+    sku: product.id.toString(),
+    mpn: product.id.toString(),
     brand: {
       '@type': 'Brand',
       name: brandName || 'Diğer',
     },
     offers: {
       '@type': 'AggregateOffer',
+      url: `https://www.piinti.com/urunler/${params.slug}`,
       priceCurrency: 'TRY',
       lowPrice: lowestPrice > 0 ? lowestPrice : undefined,
       highPrice: highestPrice > 0 ? highestPrice : undefined,
-      offerCount: sortedPrices.length,
+      offerCount: sortedPrices.length > 0 ? sortedPrices.length : 1,
       offers: sortedPrices.map((sp: any) => ({
         '@type': 'Offer',
         price: sp.price,
         priceCurrency: 'TRY',
+        priceValidUntil: priceValidUntil.toISOString().split('T')[0],
+        itemCondition: 'https://schema.org/NewCondition',
         availability: sp.in_stock ? 'https://schema.org/InStock' : 'https://schema.org/OutOfStock',
-        url: sp.product_url,
+        url: sp.product_url ? sp.product_url : `https://www.piinti.com/git/${product.id}?vendor=${sp.vendor_id || sp.vendors?.id}`,
         seller: {
           '@type': 'Organization',
-          name: sp.vendors?.name
+          name: sp.vendors?.name || 'Bilinmeyen Satıcı'
         }
       }))
     },
-    aggregateRating: product.rating ? {
+    aggregateRating: product.rating && product.reviews_count > 0 ? {
       '@type': 'AggregateRating',
       ratingValue: product.rating,
       reviewCount: product.reviews_count
     } : undefined
   };
+
+  const ninetyDaysAgo = new Date();
+  ninetyDaysAgo.setDate(ninetyDaysAgo.getDate() - 90);
+  const recentHistory = (familyHistory || [])
+    .filter((h: any) => new Date(h.recorded_at) >= ninetyDaysAgo)
+    .sort((a: any, b: any) => new Date(a.recorded_at).getTime() - new Date(b.recorded_at).getTime())
+    .map((h: any) => ({
+      date: h.recorded_at,
+      price: h.price,
+      vendor: h.vendors?.name || 'Bilinmeyen Mağaza'
+    }));
 
   const breadcrumbLd = {
     '@context': 'https://schema.org',
@@ -281,11 +317,13 @@ export default async function UrunDetay({ params }: { params: { slug: string } }
             <div className="mb-4 flex items-center gap-2">
                 <span className="bg-primary/10 text-primary text-[11px] font-black px-3 py-1 rounded-full uppercase tracking-tighter border border-primary/20">{brandName || 'PREMIUM BRAND'}</span>
                 <span className="text-slate-300">•</span>
-                <span className="text-slate-400 text-xs font-bold uppercase tracking-widest">{categoryName || 'GENERAL CATEGORY'}</span>
-            </div>
-            <h1 className="text-3xl md:text-5xl font-black text-slate-900 mb-6 leading-tight tracking-tight">
-              {product.title}
-            </h1>
+                <span className="text-slate-400">&gt;</span>
+            <span className="text-slate-600 truncate">{product.title}</span>
+          </div>
+
+          <h1 className="text-4xl md:text-5xl font-black text-slate-900 mb-6 leading-tight tracking-tighter">
+            {product.title} <span className="text-slate-400 font-medium">Fiyatları</span>
+          </h1>
             
             <div className="flex flex-wrap items-center gap-6 mb-10 pb-10 border-b border-dashed border-slate-200">
               <div className="flex items-center gap-2 bg-amber-50 text-amber-700 px-4 py-2 rounded-2xl text-sm font-black border border-amber-100">
@@ -316,7 +354,7 @@ export default async function UrunDetay({ params }: { params: { slug: string } }
 
             {/* Dinamik Fiyat Rozetleri — price_history'den gerçek hesaplama */}
             <PriceBadges
-              priceHistory={product.price_history || []}
+              priceHistory={recentHistory}
               currentPrice={lowestPrice}
               windowDays={30}
             />
@@ -342,33 +380,44 @@ export default async function UrunDetay({ params }: { params: { slug: string } }
                   aria-hidden="true" 
                 />
                 
-                <PriceHistoryChart historyData={product.price_history || []} productName={product.title} />
+                <PriceHistoryChart historyData={recentHistory} productName={product.title} />
             </div>
 
             {/* AI PREDICTOR / BEKLENTİ ANALİZİ */}
             {(() => {
-              const analytics = analyzePriceTrend(product.price_history || [], lowestPrice);
+              const analytics = analyzePriceTrend(recentHistory, lowestPrice);
               return (
                 <div className="bg-slate-900 p-8 rounded-[2rem] mb-10 border border-slate-800 shadow-2xl relative overflow-hidden group">
-                  <div className="absolute top-0 right-0 w-64 h-64 bg-primary/20 rounded-full blur-[100px] -mr-32 -mt-32"></div>
+                  <div className={`absolute top-0 right-0 w-64 h-64 bg-${analytics.color}-500/20 rounded-full blur-[100px] -mr-32 -mt-32 transition-colors duration-1000`}></div>
+                  
+                  <div className="flex items-center gap-2 mb-6">
+                    <div className="w-8 h-8 rounded-full bg-indigo-500/20 text-indigo-400 flex items-center justify-center border border-indigo-500/30">
+                      <Sparkles className="w-4 h-4" />
+                    </div>
+                    <span className="text-xs font-black uppercase tracking-widest text-slate-400">Piinti AI Fiyat Tahmini</span>
+                  </div>
+
                   <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-8">
                     <div className="flex items-center gap-6">
-                      <div className={`w-16 h-16 ${analytics.color} rounded-2xl flex items-center justify-center text-3xl shadow-xl shadow-black/20`}>
-                        {analytics.icon}
+                      <div className={`w-20 h-20 bg-${analytics.color}-500 text-white rounded-3xl flex items-center justify-center shadow-xl shadow-${analytics.color}-500/20 border border-white/10 relative overflow-hidden`}>
+                        <div className="absolute inset-0 bg-white/20 mix-blend-overlay"></div>
+                        <span className="text-3xl font-black">{analytics.dropProbability}%</span>
                       </div>
                       <div>
-                        <h3 className="text-white font-black text-xl mb-1 uppercase tracking-tight">{analytics.message}</h3>
-                        <p className="text-slate-400 text-xs font-bold uppercase tracking-widest">Piinti AI Fiyat Beklentisi</p>
+                        <h3 className="text-white font-black text-2xl mb-1 tracking-tight">{analytics.title}</h3>
+                        <p className="text-slate-400 text-sm font-medium leading-relaxed max-w-sm">
+                          {analytics.message}
+                        </p>
                       </div>
                     </div>
-                    <div className="bg-white/5 backdrop-blur border border-white/10 p-4 rounded-2xl text-center md:text-left">
-                      <p className="text-[10px] font-black text-primary uppercase tracking-[0.2em] mb-2">Analiz Özeti</p>
-                      <p className="text-white text-sm font-medium leading-relaxed max-w-xs">
-                        {analytics.trend === 'best' ? "Şu an ürünün kaydedilmiş en düşük fiyatındasın. Kaçırmanı önermeyiz!" :
-                         analytics.trend === 'good' ? "Fiyat ortalamanın altında seyrediyor, alım için uygun bir dönem." :
-                         analytics.trend === 'bad' ? "Fiyat son dönem ortalamasının üzerinde. Acil değilse beklemeni öneririz." :
-                         "Fiyat istikrarlı görünüyor, piyasa koşulları normal."}
-                      </p>
+                    
+                    <div className="w-full md:w-auto flex flex-col gap-3">
+                      <div className="bg-white/5 backdrop-blur border border-white/10 p-4 rounded-2xl text-center md:text-left">
+                        <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2">Yapay Zeka Kararı</p>
+                        <p className={`text-lg font-black text-${analytics.color}-400 uppercase tracking-tighter`}>
+                          {analytics.actionText}
+                        </p>
+                      </div>
                     </div>
                   </div>
                 </div>

@@ -65,12 +65,12 @@ export default function Navbar() {
             
             {/* User Auth Info */}
             {session ? (
-              <Link href="/profil" className="flex items-center gap-2 bg-slate-50 hover:bg-teal-50 text-slate-700 hover:text-teal-700 border border-slate-200 hover:border-teal-200 px-4 py-2 rounded-xl text-sm font-bold transition-all shadow-sm">
-                <User className="w-4 h-4" /> Profilim
+              <Link href="/hesabim" className="flex items-center gap-2 bg-gradient-to-r from-primary to-emerald-500 hover:from-primary/90 hover:to-emerald-500/90 text-white px-5 py-2.5 rounded-2xl text-sm font-black transition-all shadow-lg shadow-primary/20 hover:shadow-primary/30 hover:-translate-y-0.5 active:scale-95">
+                <User className="w-4 h-4" /> Hesabım
               </Link>
             ) : (
-              <Link href="/giris" className="bg-slate-900 hover:bg-slate-800 text-white px-5 py-2.5 rounded-xl text-sm font-bold transition-all shadow-lg shadow-slate-900/10 active:scale-95">
-                Giriş Yap
+              <Link href="/giris" className="flex items-center gap-2 bg-slate-900 hover:bg-slate-800 text-white px-5 py-2.5 rounded-2xl text-sm font-bold transition-all shadow-lg shadow-slate-900/20 hover:-translate-y-0.5 active:scale-95">
+                <User className="w-4 h-4" /> Giriş Yap
               </Link>
             )}
           </div>

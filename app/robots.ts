@@ -5,7 +5,13 @@ export default function robots(): MetadataRoute.Robots {
     rules: {
       userAgent: '*',
       allow: '/',
-      disallow: ['/api/', '/admin/'],
+      disallow: [
+        '/admin/', 
+        '/satici/panel/', 
+        '/hesabim/',
+        '/api/',
+        '/git/' // Affiliate out-link yönlendirmeleri
+      ],
     },
     sitemap: 'https://www.piinti.com/sitemap.xml',
   };

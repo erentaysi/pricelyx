@@ -1,9 +1,11 @@
 require('dotenv').config({ path: './.env.local' });
 const { createClient } = require('@supabase/supabase-js');
+const { upsertPriceAndHistory } = require('./price_helper');
+const { findCanonicalProduct } = require('./product_matcher');
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+  process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 );
 
 const randomDelay = () => new Promise(r => setTimeout(r, Math.floor(Math.random() * 1500) + 1000));
@@ -31,7 +33,7 @@ async function run() {
   // Civil altyapısı Shopify olduğu için direkt API'den güvenli çekim yapıyoruz
   console.log("🌐 Civil ürünleri API'den çekiliyor (Bot koruması riski %0)...");
   
-  const response = await fetch('https://www.civilim.com/products.json?limit=40');
+  const response = await fetch('https://www.civilim.com/products.json?limit=250');
   const data = await response.json();
   const products = data.products || [];
 
@@ -74,32 +76,39 @@ async function run() {
     // 1. Ürün upsert (manuel kontrol)
     let pId = null;
     const { data: existingP } = await supabase.from('products').select('id').eq('title', title).single();
+    
     if (existingP) {
       pId = existingP.id;
     } else {
+      // Yeni ürün oluşturulacak, Canonical Parent var mı diye sor:
+      let canonicalId = null;
+      if (bId) {
+        canonicalId = await findCanonicalProduct(supabase, title, bId);
+      }
+
       const { data: newP, error: pErr } = await supabase.from('products').insert([{
-        title, brand_id: bId, image_url, category_id: CATEGORY_ID
+        title, brand_id: bId, image_url, category_id: CATEGORY_ID, canonical_id: canonicalId
       }]).select('id').single();
+      
       if (pErr) { console.log(`[HATA - ÜRÜN] ${title} -> ${pErr.message}`); continue; }
       pId = newP.id;
+      
+      if (canonicalId) {
+        console.log(`🔗 [CANONICAL BAĞLANTI] "${title}" ürünü (ID: ${pId}) Parent ürüne bağlandı (Parent ID: ${canonicalId})`);
+      }
     }
 
-    // 2. Fiyat upsert (manuel kontrol)
-    const { data: existingPrice } = await supabase.from('product_prices')
-      .select('id').eq('product_id', pId).eq('vendor_id', vendorId).single();
-
-    if (existingPrice) {
-      const { error: priceErr } = await supabase.from('product_prices').update({
-        price: price, product_url: url, in_stock: variant ? variant.available : true
-      }).eq('id', existingPrice.id);
-      if (priceErr) console.log(`[HATA - FİYAT] ${title} -> ${priceErr.message}`);
-      else { successCount++; console.log(`[GÜNCELLENDİ] ${title.substring(0,40)}... -> ${price} TL`); }
+    // 2. Fiyat ve History upsert (Helper kullanımı)
+    const inStock = variant ? variant.available : true;
+    const res = await upsertPriceAndHistory(supabase, pId, vendorId, price, url, inStock);
+    
+    if (!res.success) {
+      console.log(`[HATA - FİYAT] ${title} -> ${res.error}`);
     } else {
-      const { error: priceErr } = await supabase.from('product_prices').insert([{
-        product_id: pId, vendor_id: vendorId, price: price, product_url: url, affiliate_url: null, in_stock: variant ? variant.available : true
-      }]);
-      if (priceErr) console.log(`[HATA - FİYAT] ${title} -> ${priceErr.message}`);
-      else { successCount++; console.log(`[EKLENDİ] ${title.substring(0,40)}... -> ${price} TL`); }
+      successCount++;
+      const action = res.isNew ? '[EKLENDİ]' : '[GÜNCELLENDİ]';
+      const hist = res.historyInserted ? ' (+History)' : '';
+      console.log(`${action} ${title.substring(0,40)}... -> ${price} TL${hist}`);
     }
   }
 

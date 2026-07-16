@@ -13,7 +13,20 @@ export async function middleware(request: NextRequest) {
   let response = NextResponse.next();
   
   // Refresh Supabase Session Cookies
-  response = await updateSession(request, response);
+  const { supabaseResponse, user } = await updateSession(request, response);
+  response = supabaseResponse;
+
+  // Admin Koruması
+  if (request.nextUrl.pathname.startsWith('/admin')) {
+    if (!user) {
+      return NextResponse.redirect(new URL('/satici/basvuru', request.url));
+    }
+    // TODO: Gerçek projede veritabanından rol kontrolü yapılmalı.
+    // Şimdilik test için admin@piinti.com kullanıyoruz.
+    if (user.email !== 'admin@piinti.com') {
+      return NextResponse.redirect(new URL('/', request.url));
+    }
+  }
   
   response.headers.set('X-Frame-Options', 'DENY');
   response.headers.set('X-Content-Type-Options', 'nosniff');

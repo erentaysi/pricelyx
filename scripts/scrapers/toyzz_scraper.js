@@ -3,11 +3,10 @@ const StealthPlugin = require('puppeteer-extra-plugin-stealth');
 puppeteer.use(StealthPlugin());
 require('dotenv').config({ path: './.env.local' });
 const { createClient } = require('@supabase/supabase-js');
+const { upsertPriceAndHistory } = require('./price_helper');
+const { findCanonicalProduct } = require('./product_matcher');
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-);
+const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY);
 
 const randomDelay = () => new Promise(r => setTimeout(r, Math.floor(Math.random() * 1500) + 1000));
 
@@ -101,31 +100,49 @@ async function run() {
       }
     }
     
-    let pId = null;
+    // 2. Ürünü Ekle (Manuel Upsert - Canonical Bağlantısı ile)
+    let productId = null;
     const { data: existingP } = await supabase.from('products').select('id').eq('title', item.title).single();
+    
     if (existingP) {
-      pId = existingP.id;
+      productId = existingP.id;
     } else {
-      const { data: newP, error: pErr } = await supabase.from('products').insert([{
-        title: item.title, brand_id: bId, image_url: item.image_url, category_id: CATEGORY_ID
-      }]).select('id').single();
-      if (pErr) continue;
-      pId = newP.id;
+      let canonicalId = null;
+      if (bId) {
+        canonicalId = await findCanonicalProduct(supabase, item.title, bId);
+      }
+
+      const { data: productData, error: productErr } = await supabase
+        .from('products')
+        .insert({
+          title: item.title,
+          brand_id: bId,
+          image_url: item.image_url,
+          category_id: CATEGORY_ID,
+          canonical_id: canonicalId
+        })
+        .select('id')
+        .single();
+
+      if (productErr) {
+        console.log(`[ATLANDI] ${item.title} -> ${productErr.message}`);
+        continue;
+      }
+      productId = productData.id;
+      
+      if (canonicalId) {
+        console.log(`🔗 [CANONICAL BAĞLANTI] "${item.title}" ürünü Parent ürüne bağlandı (Parent ID: ${canonicalId})`);
+      }
     }
 
-    const { data: existingPrice } = await supabase.from('product_prices')
-      .select('id').eq('product_id', pId).eq('vendor_id', vendorId).single();
-
-    if (existingPrice) {
-      const { error: priceErr } = await supabase.from('product_prices').update({
-        price: item.price, product_url: item.url, in_stock: true
-      }).eq('id', existingPrice.id);
-      if (!priceErr) { successCount++; console.log(`[GÜNCELLENDİ] ${item.title.substring(0, 40)}... -> ${item.price} TL`); }
+    const res = await upsertPriceAndHistory(supabase, productId, vendorId, item.price, item.url, true);
+    if (!res.success) {
+      console.log(`[HATA - FİYAT] ${item.title} -> ${res.error}`);
     } else {
-      const { error: priceErr } = await supabase.from('product_prices').insert([{
-        product_id: pId, vendor_id: vendorId, price: item.price, product_url: item.url, affiliate_url: null, in_stock: true
-      }]);
-      if (!priceErr) { successCount++; console.log(`[EKLENDİ] ${item.title.substring(0, 40)}... -> ${item.price} TL`); }
+      successCount++;
+      const action = res.isNew ? '[EKLENDİ]' : '[GÜNCELLENDİ]';
+      const hist = res.historyInserted ? ' (+History)' : '';
+      console.log(`${action} ${item.title.substring(0, 40)}... -> ${item.price} TL${hist}`);
     }
   }
 

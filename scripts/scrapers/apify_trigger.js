@@ -1,9 +1,10 @@
 require('dotenv').config({ path: './.env.local' });
 const { createClient } = require('@supabase/supabase-js');
+const { upsertPriceAndHistory } = require('./price_helper');
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+  process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 );
 
 const APIFY_TOKEN = process.env.APIFY_API_TOKEN;
@@ -199,19 +200,14 @@ async function run() {
       pId = newP.id;
     }
 
-    const { data: existingPrice } = await supabase.from('product_prices')
-      .select('id').eq('product_id', pId).eq('vendor_id', vendorId).single();
-
-    if (existingPrice) {
-      const { error: priceErr } = await supabase.from('product_prices').update({
-        price: price, product_url: url, in_stock: true
-      }).eq('id', existingPrice.id);
-      if (!priceErr) { successCount++; console.log(`[GÜNCELLENDİ] ${title.substring(0,40)}... -> ${price} TL`); }
+    const res = await upsertPriceAndHistory(supabase, pId, vendorId, price, url, true);
+    if (!res.success) {
+      console.log(`[HATA - FİYAT] ${title} -> ${res.error}`);
     } else {
-      const { error: priceErr } = await supabase.from('product_prices').insert([{
-        product_id: pId, vendor_id: vendorId, price: price, product_url: url, affiliate_url: null, in_stock: true
-      }]);
-      if (!priceErr) { successCount++; console.log(`[EKLENDİ] ${title.substring(0,40)}... -> ${price} TL`); }
+      successCount++;
+      const action = res.isNew ? '[EKLENDİ]' : '[GÜNCELLENDİ]';
+      const hist = res.historyInserted ? ' (+History)' : '';
+      console.log(`${action} ${title.substring(0,40)}... -> ${price} TL${hist}`);
     }
   }
 

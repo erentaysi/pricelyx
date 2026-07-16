@@ -1,4 +1,5 @@
 import React from 'react';
+import Image from 'next/image';
 import { Store, Truck, Zap } from 'lucide-react';
 
 interface StoreListViewProps {
@@ -61,10 +62,14 @@ export default function StoreListView({ productId, prices }: StoreListViewProps)
             >
               <div className="flex items-center gap-6">
                 <div
-                  className="w-20 h-20 rounded-2xl flex items-center justify-center text-3xl shrink-0 shadow-sm border border-slate-100 bg-white"
+                  className="w-20 h-20 rounded-2xl flex items-center justify-center text-3xl shrink-0 shadow-sm border border-slate-100 bg-white p-2"
                   style={{ color: store?.color || '#cbd5e1' }}
                 >
-                  {store?.logo || <Store className="w-10 h-10 text-slate-200" />}
+                  {store?.logo && store.logo.startsWith('http') ? (
+                    <Image src={store.logo} alt={store?.name || 'Mağaza Logosu'} width={64} height={64} unoptimized className="object-contain w-full h-full" />
+                  ) : (
+                    <Store className="w-10 h-10 text-slate-200" />
+                  )}
                 </div>
                 <div>
                   <div className="flex items-center gap-3 mb-2">

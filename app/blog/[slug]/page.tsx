@@ -1,5 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
 import { notFound } from 'next/navigation';
+import Image from 'next/image';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import Link from 'next/link';
@@ -85,10 +86,12 @@ export default async function BlogDetailPage({ params }: { params: { slug: strin
       
       {/* Blog Hero Image */}
       <div className="w-full h-[40vh] md:h-[60vh] relative bg-slate-900">
-        <img 
+        <Image 
           src={blog.image_url || 'https://images.unsplash.com/photo-1518770660439-4636190af475?w=1600&q=80'} 
           alt={blog.title} 
-          className="w-full h-full object-cover opacity-60"
+          fill
+          priority
+          className="object-cover opacity-60"
         />
         <div className="absolute inset-0 bg-gradient-to-t from-white via-transparent to-transparent" />
       </div>

@@ -3,10 +3,12 @@ const StealthPlugin = require('puppeteer-extra-plugin-stealth');
 puppeteer.use(StealthPlugin());
 require('dotenv').config({ path: './.env.local' });
 const { createClient } = require('@supabase/supabase-js');
+const { upsertPriceAndHistory } = require('./price_helper');
+const { findCanonicalProduct } = require('./product_matcher');
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+  process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 );
 
 // Rastgele gecikme fonksiyonu (1000ms - 2500ms)
@@ -106,41 +108,59 @@ async function run() {
     
     await randomDelay(); // Anti-bot rate limit
     
-    // 1. Ürünü ekle veya güncelle
-    const { data: productData, error: productErr } = await supabase
-      .from('products')
-      .upsert({
-        title: item.title,
-        brand: item.brand,
-        image_url: item.image_url,
-        category_id: CATEGORY_ID
-      }, { onConflict: 'title' })
-      .select('id')
-      .single();
+    // 1. Ürünü Ekle (Manuel Upsert - Canonical Bağlantısı ile)
+    let productId = null;
+    const { data: existingP } = await supabase.from('products').select('id').eq('title', item.title).single();
+    
+    if (existingP) {
+      productId = existingP.id;
+    } else {
+      let canonicalId = null;
+      // Not: ebebek scraper'da bId şu an kullanılmıyor ama ileride eklenirse diye hazır
+      // item.brand string geldiği için marka ID'sini bulmamız lazım
+      let bId = null;
+      if (item.brand) {
+         const { data: bData } = await supabase.from('brands').select('id').eq('name', item.brand).single();
+         if (bData) bId = bData.id;
+      }
 
-    if (productErr) {
-      console.log(`[ATLANDI] ${item.title} -> ${productErr.message}`);
-      continue;
+      if (bId) {
+        canonicalId = await findCanonicalProduct(supabase, item.title, bId);
+      }
+
+      const { data: productData, error: productErr } = await supabase
+        .from('products')
+        .insert({
+          title: item.title,
+          brand_id: bId,
+          image_url: item.image_url,
+          category_id: CATEGORY_ID,
+          canonical_id: canonicalId
+        })
+        .select('id')
+        .single();
+
+      if (productErr) {
+        console.log(`[ATLANDI] ${item.title} -> ${productErr.message}`);
+        continue;
+      }
+      productId = productData.id;
+      
+      if (canonicalId) {
+        console.log(`🔗 [CANONICAL BAĞLANTI] "${item.title}" ürünü Parent ürüne bağlandı (Parent ID: ${canonicalId})`);
+      }
     }
 
-    const productId = productData.id;
+    // 2. Fiyat ve Geçmiş bilgisini ekle veya güncelle
+    const res = await upsertPriceAndHistory(supabase, productId, VENDOR_ID, item.price, item.url, true);
 
-    // 2. Fiyat bilgisini ekle veya güncelle
-    const { error: priceErr } = await supabase
-      .from('product_prices')
-      .upsert({
-        product_id: productId,
-        vendor_id: VENDOR_ID,
-        price: item.price,
-        product_url: item.url,
-        in_stock: true
-      }, { onConflict: 'product_id, vendor_id' });
-
-    if (priceErr) {
-       console.log(`[FİYAT HATASI] ${item.title} -> ${priceErr.message}`);
+    if (!res.success) {
+       console.log(`[FİYAT HATASI] ${item.title} -> ${res.error}`);
     } else {
        successCount++;
-       console.log(`[BAŞARILI] ${item.title.substring(0, 40)}... -> ${item.price} TL`);
+       const action = res.isNew ? '[EKLENDİ]' : '[GÜNCELLENDİ]';
+       const hist = res.historyInserted ? ' (+History)' : '';
+       console.log(`${action} ${item.title.substring(0, 40)}... -> ${item.price} TL${hist}`);
     }
   }
 
