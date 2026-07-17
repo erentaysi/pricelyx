@@ -1,44 +1,30 @@
-"use client";
-
 import Link from 'next/link';
-import { Search, Home, ArrowLeft } from 'lucide-react';
-import SearchForm from './components/SearchForm';
+import { Search } from 'lucide-react';
 
 export default function NotFound() {
   return (
-    <div className="min-h-[70vh] flex items-center justify-center px-6 py-24 bg-gray-50">
-      <div className="max-w-2xl w-full text-center">
-        <div className="mb-12 relative inline-block">
-          <div className="text-[150px] font-black text-slate-900/5 leading-none select-none">404</div>
-          <div className="absolute inset-0 flex items-center justify-center">
-             <div className="bg-white p-6 rounded-[2rem] shadow-2xl border border-slate-100 rotate-3 group hover:rotate-0 transition-transform duration-500">
-                <Search className="w-16 h-16 text-primary animate-pulse" />
-             </div>
-          </div>
-        </div>
-        
-        <h1 className="text-4xl font-black text-slate-900 mb-6 tracking-tight">Kanka Bu Sayfayı Bulamadık! 🕵️‍♂️</h1>
-        <p className="text-slate-500 font-medium mb-12 text-lg leading-relaxed max-w-md mx-auto">
-          Aradığın ürün veya sayfa şu an Piinti radarında değil ya da taşınmış olabilir. Gel beraber yenisini arayalım.
+    <div className="min-h-screen bg-slate-50 flex items-center justify-center p-6">
+      <div className="bg-white max-w-lg w-full rounded-3xl p-10 text-center border border-slate-100 shadow-xl">
+        <div className="text-8xl font-black text-slate-100 mb-6 tracking-tighter">404</div>
+        <h2 className="text-3xl font-black text-slate-800 mb-4">Sayfa Bulunamadı</h2>
+        <p className="text-slate-500 mb-8 text-lg">
+          Aradığınız ürün, kategori veya marka sayfasına ulaşılamıyor. Yayından kaldırılmış veya URL değişmiş olabilir.
         </p>
-
-        <div className="max-w-md mx-auto mb-12">
-            <SearchForm />
-        </div>
-
-        <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-          <Link 
-            href="/" 
-            className="flex items-center gap-3 bg-slate-900 hover:bg-primary text-white font-black px-8 py-4 rounded-2xl transition-all duration-300 shadow-xl shadow-slate-900/10 uppercase tracking-widest text-xs"
+        
+        <div className="flex flex-col gap-4">
+          <Link
+            href="/"
+            className="w-full px-6 py-4 bg-teal-500 text-white font-black rounded-xl hover:bg-teal-600 transition-colors shadow-lg hover:shadow-xl hover:-translate-y-0.5 flex items-center justify-center gap-2"
           >
-            <Home className="w-4 h-4" /> Ana Sayfaya Dön
+            <Search size={20} />
+            Ürün Aramaya Dön
           </Link>
-          <button 
-            onClick={() => window.history.back()}
-            className="flex items-center gap-3 bg-white hover:bg-slate-50 text-slate-600 font-bold px-8 py-4 rounded-2xl border border-slate-200 transition-all duration-300"
+          <Link
+            href="/kampanyalar"
+            className="w-full px-6 py-4 bg-slate-100 text-slate-700 font-bold rounded-xl hover:bg-slate-200 transition-colors"
           >
-            <ArrowLeft className="w-4 h-4" /> Geri Git
-          </button>
+            Güncel Kampanyalara Göz At
+          </Link>
         </div>
       </div>
     </div>

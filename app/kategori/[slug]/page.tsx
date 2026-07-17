@@ -1,148 +1,183 @@
-import { notFound } from "next/navigation";
-import { supabase } from "@/lib/supabase";
-import { Metadata } from "next";
-import ProductCard from "@/app/components/ProductCard";
-import FilterSidebar from "@/app/urunler/FilterSidebar";
+import { notFound } from 'next/navigation';
+import { supabase } from '@/lib/supabase';
+import { routes } from '@/lib/routes';
+import ProductCard from '@/app/components/ProductCard';
+import { Metadata } from 'next';
+import Link from 'next/link';
 
-export const revalidate = 3600;
+export const revalidate = 3600; // ISR (1 saat)
 
-export async function generateMetadata({ params }: { params: { slug: string } }): Promise<Metadata> {
+type Props = {
+  params: { slug: string };
+};
+
+export async function generateStaticParams() {
+  const { data: categories } = await supabase.from('categories').select('slug').not('slug', 'is', null);
+  return (categories || []).map((category) => ({
+    slug: category.slug,
+  }));
+}
+
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { data: category } = await supabase
-    .from("categories")
-    .select("name, slug")
-    .eq("slug", params.slug)
+    .from('categories')
+    .select('name, slug')
+    .eq('slug', params.slug)
     .single();
 
-  if (!category) {
-    return { title: "Kategori Bulunamadı" };
-  }
+  if (!category) return { title: 'Bulunamadı' };
 
-  const title = `${category.name} Modelleri ve En Uygun Fiyatlar | Piinti`;
-  const description = `En iyi ${category.name} ürünlerini, indirimleri ve tüm mağaza fiyatlarını Piinti kalitesiyle karşılaştırın.`;
+  const title = `${category.name} Modelleri, Fiyatları ve İndirimleri | Piinti`;
+  const description = routes.seoContent.getCategoryDescription(category.name);
+  const canonical = routes.categoryCanonical(params.slug);
 
   return {
     title,
     description,
-    alternates: { canonical: `https://piinti.com/kategori/${category.slug}` }
+    alternates: {
+      canonical,
+    },
+    openGraph: {
+      title,
+      description,
+      url: canonical,
+      type: 'website',
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title,
+      description,
+    }
   };
 }
 
-export default async function KategoriPage({ params, searchParams }: { params: { slug: string }, searchParams: { min_price?: string, max_price?: string, brand?: string } }) {
+export default async function CategoryPage({ params }: Props) {
   const { data: category } = await supabase
-    .from("categories")
-    .select("id, name, slug")
-    .eq("slug", params.slug)
+    .from('categories')
+    .select('id, name, slug, parent_id')
+    .eq('slug', params.slug)
     .single();
 
   if (!category) {
     notFound();
   }
 
-  const { min_price, max_price, brand } = searchParams;
+  // Fetch Category Products
+  const { data: products } = await supabase
+    .from('products')
+    .select(`
+      id, title, slug, image_url, rating, reviews_count,
+      brands (name, slug),
+      product_prices (price, vendors(name))
+    `)
+    .eq('category_id', category.id)
+    .order('created_at', { ascending: false })
+    .limit(40);
 
-  let query = supabase.from("products").select(`
-    *,
-    brands${brand ? "!inner" : ""}(name),
-    categories!inner(name, slug),
-    product_prices(price, vendor_id, vendors(id, name)),
-    price_history(price, recorded_at)
-  `).eq("categories.slug", params.slug).order("created_at", { ascending: false });
-
-  if (brand) {
-    query = query.eq("brands.name", brand);
+  // Eğer kategoride hiç ürün yoksa boş sayfa oluşturma (Thin Content Koruması)
+  if (!products || products.length === 0) {
+    notFound();
   }
 
-  const { data: products } = await query;
-  let filteredProducts = products || [];
+  // Fetch Related Categories
+  const { data: relatedCategories } = await supabase
+    .from('categories')
+    .select('name, slug')
+    .eq('parent_id', category.parent_id || category.id)
+    .neq('id', category.id)
+    .limit(5);
 
-  if (min_price || max_price) {
-    const min = min_price ? parseFloat(min_price) : 0;
-    const max = max_price ? parseFloat(max_price) : Infinity;
-    filteredProducts = filteredProducts.filter((p: any) => {
-      const priceStr = p.product_prices?.[0]?.price || p.price_history?.[0]?.price;
-      const currentPrice = priceStr ? parseFloat(priceStr.toString().replace(/[^0-9.]/g, "")) : 0;
-      return currentPrice >= min && currentPrice <= max;
-    });
-  }
+  // Extract Brands for Internal Linking
+  const brands = Array.from(new Set(products.map(p => {
+    const b = Array.isArray(p.brands) ? p.brands[0] : p.brands;
+    return b?.name;
+  }).filter(Boolean)));
+  
+  const brandSlugs = Array.from(new Set(products.map(p => {
+    const b = Array.isArray(p.brands) ? p.brands[0] : p.brands;
+    return b?.slug;
+  }).filter(Boolean)));
 
-  // Categories & Brands for Sidebar
-  const { data: allCategories } = await supabase.from("categories").select("*");
-  const { data: productsForFilters } = await supabase.from("products").select("category_id, brands(name)");
+  // Schemas
+  const breadcrumbLd = {
+    '@context': 'https://schema.org',
+    '@type': 'BreadcrumbList',
+    itemListElement: [
+      { '@type': 'ListItem', position: 1, name: 'Ana Sayfa', item: routes.home() },
+      { '@type': 'ListItem', position: 2, name: 'Tüm Kategoriler', item: routes.listing() },
+      { '@type': 'ListItem', position: 3, name: category.name, item: routes.categoryCanonical(category.slug) }
+    ]
+  };
 
-  const brandsData = Array.from(new Map((productsForFilters || [])
-    .filter((p: any) => p.brands)
-    .map((p: any) => {
-      const b = Array.isArray(p.brands) ? p.brands[0] : p.brands;
-      return [b.name, b];
-    })
-  ).values());
-
-  const usedCategoryIds = new Set((productsForFilters || []).map((p: any) => p.category_id));
-  const activeSubs = (allCategories || []).filter(c => usedCategoryIds.has(c.id) && c.parent_id !== null);
-  const allMains = (allCategories || []).filter(c => c.parent_id === null && c.name !== "Piinti Market");
-
-  const categoriesData = allMains.map(main => ({
-    ...main,
-    subs: activeSubs.filter(sub => sub.parent_id === main.id)
-  }));
-
-  // Schema
-  const jsonLd = {
-    "@context": "https://schema.org",
-    "@type": "CollectionPage",
+  const collectionLd = {
+    '@context': 'https://schema.org',
+    '@type': 'CollectionPage',
     name: category.name,
-    description: `En iyi ${category.name} fiyatları ve indirimleri`,
-    url: `https://piinti.com/kategori/${category.slug}`,
+    url: routes.categoryCanonical(category.slug),
+    description: routes.seoContent.getCategoryDescription(category.name),
     mainEntity: {
-      "@type": "ItemList",
-      itemListElement: filteredProducts.map((p: any, index: number) => ({
-        "@type": "ListItem",
-        position: index + 1,
-        item: {
-          "@type": "Product",
-          url: `https://piinti.com/urunler/${p.slug}`,
-          name: p.title
-        }
+      '@type': 'ItemList',
+      itemListElement: products.slice(0, 20).map((p, i) => ({
+        '@type': 'ListItem',
+        position: i + 1,
+        url: routes.productCanonical(p.slug)
       }))
     }
   };
 
   return (
-    <div className="max-w-7xl mx-auto px-6 py-12 flex flex-col md:flex-row gap-8">
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
-      
-      <FilterSidebar 
-        categories={categoriesData || []} 
-        brands={brandsData || []} 
-        currentCat={category.slug} 
-        currentBrand={brand} 
-        currentMinPrice={min_price}
-        currentMaxPrice={max_price}
-      />
+    <>
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbLd).replace(/</g, '\\u003c') }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(collectionLd).replace(/</g, '\\u003c') }} />
 
-      <div className="flex-1">
-        <div className="mb-8">
-          <h1 className="text-3xl font-black text-slate-900 tracking-tight">
-             {category.name} Modelleri ve Fiyatları
-             <span className="text-slate-500 text-lg font-medium ml-3">({filteredProducts.length} sonuç)</span>
-          </h1>
-          <p className="text-slate-500 mt-2">
-            Piyasadaki en güncel {category.name} fiyatlarını karşılaştırın. Aradığınız özellikleri filtreleyerek en ucuz seçeneği bulun.
-          </p>
-        </div>
-        
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-          {filteredProducts.map((product: any) => (
-            <ProductCard key={product.id} product={product} />
-          ))}
-          {filteredProducts.length === 0 && (
-            <div className="col-span-full py-20 px-6 flex flex-col items-center justify-center text-center bg-white rounded-[2rem] border border-slate-100 shadow-xl shadow-slate-100/50">
-              <h3 className="text-xl font-bold text-slate-900 mb-2">Bu Kategori Boş 🕵️‍♂️</h3>
-              <p className="text-slate-500">Şu anda bu kategoride listelenen ürün bulunmuyor.</p>
+      <div className="bg-slate-50 min-h-screen py-12">
+        <div className="container mx-auto px-4 max-w-7xl">
+          
+          {/* SEO Header */}
+          <div className="bg-white rounded-3xl p-8 mb-8 shadow-sm border border-slate-100 fade-in">
+            <h1 className="text-3xl md:text-5xl font-black text-slate-900 tracking-tight mb-4">
+              {category.name} <span className="text-primary">Fiyatları</span>
+            </h1>
+            <p className="text-slate-600 max-w-3xl leading-relaxed text-lg">
+              {routes.seoContent.getCategoryDescription(category.name)}
+            </p>
+          </div>
+
+          {/* Internal Links (Brands in Category) */}
+          {brands.length > 0 && (
+            <div className="mb-8 flex flex-wrap gap-2">
+              <span className="text-sm font-bold text-slate-400 py-2 mr-2 uppercase tracking-widest">Popüler Markalar:</span>
+              {brandSlugs.map((bs, idx) => (
+                <Link key={idx} href={routes.categoryBrand(category.slug, bs as string)} className="bg-white px-4 py-2 rounded-xl text-sm font-bold text-slate-700 hover:text-primary hover:shadow-md transition-all border border-slate-200">
+                  {brands[idx]} {category.name}
+                </Link>
+              ))}
             </div>
           )}
+
+          {/* Product Grid */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            {products.map((product) => (
+              <ProductCard key={product.id} product={product} />
+            ))}
+          </div>
+
+          {/* Related Categories (Internal Linking) */}
+          {relatedCategories && relatedCategories.length > 0 && (
+            <div className="mt-16 bg-white rounded-3xl p-8 shadow-sm border border-slate-100">
+              <h3 className="text-xl font-black text-slate-900 mb-6 uppercase tracking-tight">Benzer Kategorileri İncele</h3>
+              <div className="flex flex-wrap gap-3">
+                {relatedCategories.map((rc) => (
+                  <Link key={rc.slug} href={routes.category(rc.slug)} className="bg-slate-50 hover:bg-primary/5 text-slate-600 hover:text-primary border border-slate-200 px-4 py-2 rounded-xl text-sm font-bold transition-colors">
+                    {rc.name}
+                  </Link>
+                ))}
+              </div>
+            </div>
+          )}
+
         </div>
       </div>
-    </div>
+    </>
   );
 }

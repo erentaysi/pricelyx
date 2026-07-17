@@ -73,7 +73,8 @@ export async function GET(
     .maybeSingle();
 
   const vendorName = vendorData?.name || 'Bilinmiyor';
-  const affiliateUrl = (vendorData as any)?.affiliate_url ?? null;
+  const vendorRecord = vendorData as { name?: string; affiliate_url?: string } | null;
+  const affiliateUrl = vendorRecord?.affiliate_url ?? null;
 
   const finalUrl = generateAffiliateLink(vendorName, productUrl, affiliateUrl);
   const isAff = isAffiliateLink(vendorName, affiliateUrl);

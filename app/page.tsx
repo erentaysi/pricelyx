@@ -113,8 +113,48 @@ export default async function Home() {
     "oyun-konsollari": <Gamepad2 className="w-5 h-5 text-indigo-500" />
   };
 
+  // Schema.org Structured Data
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "WebSite",
+        "@id": "https://www.piinti.com/#website",
+        "url": "https://www.piinti.com/",
+        "name": "Piinti",
+        "description": "Türkiye'nin En Akıllı Fiyat Karşılaştırma Platformu",
+        "potentialAction": {
+          "@type": "SearchAction",
+          "target": {
+            "@type": "EntryPoint",
+            "urlTemplate": "https://www.piinti.com/urunler?q={search_term_string}"
+          },
+          "query-input": "required name=search_term_string"
+        }
+      },
+      {
+        "@type": "Organization",
+        "@id": "https://www.piinti.com/#organization",
+        "name": "Piinti",
+        "url": "https://www.piinti.com",
+        "logo": {
+          "@type": "ImageObject",
+          "url": "https://www.piinti.com/logo.jpg"
+        },
+        "sameAs": [
+          "https://www.instagram.com/piinti",
+          "https://www.twitter.com/piinti"
+        ]
+      }
+    ]
+  };
+
   return (
     <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
       {/* Premium Hero Section */}
       <section className="relative overflow-hidden bg-slate-900 py-24 sm:py-32">
         {/* Background Gradients & Effects */}

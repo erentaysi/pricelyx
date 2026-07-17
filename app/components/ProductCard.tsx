@@ -36,8 +36,8 @@ export default function ProductCard({ product }: ProductCardProps) {
       <div className="bg-white rounded-3xl border border-slate-100 hover:border-primary/20 hover:shadow-2xl hover:shadow-primary/5 transition-all duration-500 flex flex-col h-full overflow-hidden relative">
         
         {/* Analytics Badge */}
-        <div className={`absolute top-4 right-4 ${analytics.trend === 'bad' ? 'bg-rose-500' : analytics.color} text-white text-[10px] font-black px-3 py-1 rounded-full shadow-lg z-10 uppercase tracking-widest flex items-center gap-1 scale-90 origin-right group-hover:scale-100 transition-transform`}>
-          <span>{analytics.icon}</span> {analytics.message}
+        <div className={`absolute top-4 right-4 bg-${analytics.color}-500 text-white text-[10px] font-black px-3 py-1 rounded-full shadow-lg z-10 uppercase tracking-widest flex items-center gap-1 scale-90 origin-right group-hover:scale-100 transition-transform`}>
+          <span>{analytics.trend === 'best' ? '🔥' : analytics.trend === 'good' ? '🎯' : analytics.trend === 'bad' ? '⏰' : '🔍'}</span> {analytics.title}
         </div>
 
         {/* Image Section */}

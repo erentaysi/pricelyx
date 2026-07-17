@@ -3,6 +3,10 @@
     {
       "path": "/api/cron/sync-xml",
       "schedule": "0 */6 * * *"
+    },
+    {
+      "path": "/api/cron/update-amazon",
+      "schedule": "0 */8 * * *"
     }
   ]
 }

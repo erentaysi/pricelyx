@@ -29,6 +29,10 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Geçersiz data formatı veya boş liste.' }, { status: 400 });
     }
 
+    if (productsArray.length > 100) {
+      return NextResponse.json({ error: 'Payload çok büyük. Vercel timeout riskine karşı batch başına maksimum 100 ürün gönderin.' }, { status: 413 });
+    }
+
     // 1. Kategori Bulucu (Amazon datası çok karışık olduğu için başlığa bakarak otomatik kategori atar)
     const guessCategory = (title: string) => {
       const t = title.toLowerCase();
@@ -48,119 +52,148 @@ export async function POST(request: Request) {
 
     // 4. Diziyi Teker Teker İşle
     for (const item of productsArray) {
-      // Apify Amazon verisi yapılandırmasını güvene al
-      const title = item.title || item.name;
-      if (!title) continue;
+      try {
+        // Apify Amazon verisi yapılandırmasını güvene al
+        const title = item.title || item.name;
+        if (!title) continue;
 
-      let extractedBrand = item.brand || 'Bilinmiyor';
-      // Apify price is often an object like { value: 12.99, currency: "$" } or string
-      let rawPrice = item.price?.value !== undefined ? item.price.value : (item.priceAmount || item.price || 0);
-      let extractedPrice = parseFloat(String(rawPrice).replace(/[^0-9.]/g, ''));
-      let extractedOriginalPrice = item.originalPrice ? parseFloat(String(item.originalPrice).replace(/[^0-9.]/g, '')) : null;
-      let imgUrl = item.image || item.imageUrl || item.thumbnailImage || item.thumbnail || '📦';
-      let url = item.url || item.link || '#';
+        let extractedBrand = item.brand || 'Bilinmiyor';
+        let rawPrice = item.price?.value !== undefined ? item.price.value : (item.priceAmount || item.price || 0);
+        let extractedPrice = parseFloat(String(rawPrice).replace(/[^0-9.]/g, ''));
+        let extractedOriginalPrice = item.originalPrice ? parseFloat(String(item.originalPrice).replace(/[^0-9.]/g, '')) : null;
+        let imgUrl = item.image || item.imageUrl || item.thumbnailImage || item.thumbnail || '📦';
+        let url = item.url || item.link || '#';
 
-      // Markayı DB'den bul veya Ekle
-      let brandObj = brands?.find(b => b.name.toLowerCase() === extractedBrand.toLowerCase());
-      if (!brandObj) {
-        const { data: newBrand } = await supabase.from('brands').insert({ name: extractedBrand }).select().single();
-        if (newBrand) {
-          brands?.push(newBrand);
-          brandObj = newBrand;
+        // Markayı DB'den bul veya Ekle
+        let brandObj = brands?.find(b => b.name.toLowerCase() === extractedBrand.toLowerCase());
+        if (!brandObj) {
+          const { data: newBrand, error: brandErr } = await supabase.from('brands').insert({ name: extractedBrand }).select().single();
+          if (brandErr) console.error(`[Ingest Error] Marka eklenemedi (${extractedBrand}):`, brandErr.message);
+          if (newBrand) {
+            brands?.push(newBrand);
+            brandObj = newBrand;
+          }
         }
-      }
 
-      // Kategoriyi tahmin et ve ID'sini bul
-      const predictedSlug = guessCategory(title);
-      let catObj = categories?.find(c => c.slug === predictedSlug);
-      
-      const cleanTitle = title.trim();
-      // Ürünü Kontrol Et (daha önce eklenmiş mi?) - ilike ile büyük/küçük harf boşluk hatasını önle, limit(1) ile duplicate varsa çökmesini engelle
-      const { data: existingProducts } = await supabase.from('products')
-        .select('id')
-        .ilike('title', cleanTitle)
-        .limit(1);
+        // Kategoriyi tahmin et ve ID'sini bul
+        const predictedSlug = guessCategory(title);
+        let catObj = categories?.find(c => c.slug === predictedSlug);
         
-      let finalProductId = existingProducts && existingProducts.length > 0 ? existingProducts[0].id : null;
+        const cleanTitle = title.trim();
+        // Ürünü Kontrol Et (daha önce eklenmiş mi?)
+        const { data: existingProducts, error: existErr } = await supabase.from('products')
+          .select('id')
+          .ilike('title', cleanTitle)
+          .limit(1);
+          
+        if (existErr) console.error(`[Ingest Error] Ürün arama hatası (${cleanTitle}):`, existErr.message);
+          
+        let finalProductId = existingProducts && existingProducts.length > 0 ? existingProducts[0].id : null;
+        console.log(`[Ingest Trace] Ürün: ${cleanTitle} | Var Mı: ${finalProductId ? 'EVET (' + finalProductId + ')' : 'HAYIR'}`);
 
-      if (!finalProductId) {
-        // Yeni Ürün Ekle
-        const { data: newProd } = await supabase.from('products').insert({
-          title: cleanTitle,
-          brand_id: brandObj?.id,
-          category_id: catObj?.id,
-          image_url: imgUrl,
-          rating: item.rating || item.stars || 4.5,
-          reviews_count: item.reviewsCount || item.ratingsTotal || 150,
-          is_trend: item.isTrend || true
-        }).select().single();
-        if (newProd) {
-          finalProductId = newProd.id;
-          const generatedSlug = generateProductSlug(cleanTitle, newProd.id);
-          await supabase.from('products').update({ slug: generatedSlug }).eq('id', newProd.id);
+        if (!finalProductId) {
+          // Yeni Ürün Ekle
+          const { data: newProd, error: insertErr } = await supabase.from('products').insert({
+            title: cleanTitle,
+            brand_id: brandObj?.id,
+            category_id: catObj?.id,
+            image_url: imgUrl,
+            rating: item.rating || item.stars || 4.5,
+            reviews_count: item.reviewsCount || item.ratingsTotal || 150,
+            is_trend: item.isTrend || true
+          }).select().single();
+          
+          if (insertErr) {
+            console.error(`[Ingest Error] Ürün INSERT edilemedi (${cleanTitle}):`, insertErr.message, insertErr.details);
+          } else {
+            console.log(`[Ingest Trace] Yeni Ürün başarıyla eklendi: ID ${newProd?.id}`);
+          }
+
+          if (newProd) {
+            finalProductId = newProd.id;
+            const generatedSlug = generateProductSlug(cleanTitle, newProd.id);
+            const { error: updateErr } = await supabase.from('products').update({ slug: generatedSlug }).eq('id', newProd.id);
+            if (updateErr) console.error(`[Ingest Error] Slug güncellenemedi (${cleanTitle}):`, updateErr.message);
+          }
         }
-      }
 
-      // 3. Satıcıyı Belirle (URL üzerinden otomatik tahmin)
-      let vendorName = item.vendor || 'Bilinmiyor';
-      if (vendorName === 'Bilinmiyor') {
-        if (url.includes('amazon.com.tr')) vendorName = 'Amazon TR';
-        else if (url.includes('trendyol.com')) vendorName = 'Trendyol';
-        else if (url.includes('hepsiburada.com')) vendorName = 'Hepsiburada';
-        else if (url.includes('n11.com')) vendorName = 'n11';
-        else if (url.includes('ciceksepeti.com')) vendorName = 'Çiçeksepeti';
-      }
-
-      let vendorObj = vendors?.find(v => v.name.toLowerCase() === vendorName.toLowerCase());
-      if (!vendorObj && vendorName !== 'Bilinmiyor') {
-        const { data: newVendor } = await supabase.from('vendors').insert({ name: vendorName }).select().single();
-        if (newVendor) {
-          vendors?.push(newVendor);
-          vendorObj = newVendor;
+        // 3. Satıcıyı Belirle (URL üzerinden otomatik tahmin)
+        let vendorName = item.vendor || 'Bilinmiyor';
+        if (vendorName === 'Bilinmiyor') {
+          if (url.includes('amazon.com.tr')) vendorName = 'Amazon TR';
+          else if (url.includes('trendyol.com')) vendorName = 'Trendyol';
+          else if (url.includes('hepsiburada.com')) vendorName = 'Hepsiburada';
+          else if (url.includes('n11.com')) vendorName = 'n11';
+          else if (url.includes('ciceksepeti.com')) vendorName = 'Çiçeksepeti';
         }
-      }
 
-      const activeVendorId = vendorObj?.id;
+        let vendorObj = vendors?.find(v => v.name.toLowerCase() === vendorName.toLowerCase());
+        if (!vendorObj && vendorName !== 'Bilinmiyor') {
+          const { data: newVendor } = await supabase.from('vendors').insert({ name: vendorName }).select().single();
+          if (newVendor) {
+            vendors?.push(newVendor);
+            vendorObj = newVendor;
+          }
+        }
 
-      // Fiyatları Ekle veya Güncelle (Upsert mantığı)
-      if (finalProductId && activeVendorId) {
-          const { data: existingPrice } = await supabase.from('product_prices')
-          .select('id, price')
-          .eq('product_id', finalProductId)
-          .eq('vendor_id', activeVendorId)
-          .single();
+        const activeVendorId = vendorObj?.id;
 
-        if (existingPrice) {
-           await supabase.from('product_prices').update({
-             price: extractedPrice,
-             original_price: extractedOriginalPrice,
-             product_url: url
-           }).eq('id', existingPrice.id);
+        // Fiyatları Ekle veya Güncelle (Upsert mantığı)
+        if (finalProductId && activeVendorId) {
+            const { data: existingPrice, error: priceFetchErr } = await supabase.from('product_prices')
+            .select('id, price')
+            .eq('product_id', finalProductId)
+            .eq('vendor_id', activeVendorId)
+            .single();
 
-           if (existingPrice.price !== extractedPrice) {
-              await supabase.from('price_history').insert({
-                  product_id: finalProductId,
-                  vendor_id: activeVendorId,
-                  price: extractedPrice
-              });
-           }
+          if (priceFetchErr && priceFetchErr.code !== 'PGRST116') { // PGRST116 = not found (beklenen bir durum)
+            console.error(`[Ingest Error] Fiyat arama hatası (Product ID: ${finalProductId}):`, priceFetchErr.message);
+          }
+
+          if (existingPrice) {
+             const { error: priceUpdateErr } = await supabase.from('product_prices').update({
+               price: extractedPrice,
+               original_price: extractedOriginalPrice,
+               product_url: url
+             }).eq('id', existingPrice.id);
+             if (priceUpdateErr) console.error(`[Ingest Error] Fiyat güncellenemedi:`, priceUpdateErr.message);
+
+             if (existingPrice.price !== extractedPrice) {
+                const { error: histErr } = await supabase.from('price_history').insert({
+                    product_id: finalProductId,
+                    vendor_id: activeVendorId,
+                    price: extractedPrice
+                });
+                if (histErr) console.error(`[Ingest Error] Price History (Update) hatası:`, histErr.message);
+             }
+             console.log(`[Ingest Trace] Ürün fiyatı güncellendi: ${cleanTitle}`);
+          } else {
+             const { error: priceInsertErr } = await supabase.from('product_prices').insert({
+               product_id: finalProductId,
+               vendor_id: activeVendorId,
+               price: extractedPrice,
+               original_price: extractedOriginalPrice,
+               product_url: url,
+               shipping_info: item.delivery || 'Ücretsiz Kargo'
+             });
+             if (priceInsertErr) console.error(`[Ingest Error] Fiyat eklenemedi:`, priceInsertErr.message);
+
+             const { error: histErr2 } = await supabase.from('price_history').insert({
+                product_id: finalProductId,
+                vendor_id: activeVendorId,
+                price: extractedPrice
+             });
+             if (histErr2) console.error(`[Ingest Error] Price History (Insert) hatası:`, histErr2.message);
+             console.log(`[Ingest Trace] Yeni ürün fiyatı eklendi: ${cleanTitle}`);
+          }
+          processedCount++;
         } else {
-           await supabase.from('product_prices').insert({
-             product_id: finalProductId,
-             vendor_id: activeVendorId,
-             price: extractedPrice,
-             original_price: extractedOriginalPrice,
-             product_url: url,
-             shipping_info: item.delivery || 'Ücretsiz Kargo'
-           });
-
-           await supabase.from('price_history').insert({
-              product_id: finalProductId,
-              vendor_id: activeVendorId,
-              price: extractedPrice
-           });
+          console.error(`[Ingest Trace] SKIPPED: finalProductId=${finalProductId}, activeVendorId=${activeVendorId} | Ürün: ${cleanTitle}`);
         }
-        processedCount++;
+      } catch (itemErr) {
+        console.error('Batch içinde tekil ürün işleme hatası:', itemErr);
+        // Hatayı yut ve diğer ürüne devam et (Tüm batch çökmesin!)
+        continue;
       }
     }
 

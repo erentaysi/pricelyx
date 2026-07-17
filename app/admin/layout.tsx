@@ -1,6 +1,15 @@
 import React from 'react';
 import Link from 'next/link';
+import { Metadata } from 'next';
 import { ShieldAlert, Users, Activity, LogOut, Settings } from 'lucide-react';
+
+export const metadata: Metadata = {
+  title: 'Admin Panel | Piinti',
+  robots: {
+    index: false,
+    follow: false,
+  },
+};
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   return (

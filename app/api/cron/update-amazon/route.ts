@@ -19,7 +19,9 @@ export async function GET(request: Request) {
     const { data: products, error: prodErr } = await supabase
       .from('products')
       .select('id, asin')
-      .not('asin', 'is', null);
+      .not('asin', 'is', null)
+      .order('created_at', { ascending: true }) // En eski ürünleri önceliklendir (Döngü için ideal olan updated_at'tir, ancak mevcut schema'da bu var)
+      .limit(40); // Vercel Timeout (10s-60s) sınırını aşmamak için maksimum 4 batch (40 ürün) işlenir.
 
     if (prodErr) throw prodErr;
     if (!products || products.length === 0) {

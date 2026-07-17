@@ -5,6 +5,7 @@ import { Metadata } from 'next';
 import { analyzePriceTrend } from "@/lib/analytics";
 import Image from "next/image";
 import { generateProductSlug } from "@/lib/utils";
+import { routes } from "@/lib/routes";
 import ProductCard from "@/app/components/ProductCard";
 
 export const dynamic = 'force-dynamic';
@@ -25,9 +26,20 @@ export async function generateMetadata({ searchParams }: { searchParams: { q?: s
     description = `${brand} marka tüm ürünlerin en güncel piyasa fiyatlarını ve indirimlerini keşfedin.`;
   }
 
+  const canonicalUrl = new URL('https://www.piinti.com/urunler');
+  if (cat) canonicalUrl.searchParams.set('cat', cat);
+  if (brand) canonicalUrl.searchParams.set('brand', brand);
+
   return {
     title: `${title} | Piinti`,
     description,
+    alternates: {
+      canonical: canonicalUrl.toString(),
+    },
+    robots: {
+      index: !q, // Arama (q) parametresi varsa indekslemeyi kapat
+      follow: true,
+    }
   };
 }
 
@@ -105,8 +117,39 @@ export default async function UrunlerPage({ searchParams }: { searchParams: { q?
     subs: activeSubs.filter(sub => sub.parent_id === main.id)
   }));
 
+  // Schema.org: CollectionPage & ItemList & BreadcrumbList
+  const breadcrumbLd = {
+    '@context': 'https://schema.org',
+    '@type': 'BreadcrumbList',
+    itemListElement: [
+      { '@type': 'ListItem', position: 1, name: 'Ana Sayfa', item: routes.home() },
+      { '@type': 'ListItem', position: 2, name: 'Tüm Ürünler', item: routes.listing() },
+      ...(cat ? [{ '@type': 'ListItem', position: 3, name: cat, item: `https://www.piinti.com/urunler?cat=${cat}` }] : [])
+    ]
+  };
+
+  const collectionLd = {
+    '@context': 'https://schema.org',
+    '@type': 'CollectionPage',
+    name: q ? `"${q}" Arama Sonuçları` : cat ? `${cat} Modelleri` : 'Tüm Ürünler',
+    url: typeof window !== 'undefined' ? window.location.href : 'https://www.piinti.com/urunler',
+    mainEntity: {
+      '@type': 'ItemList',
+      itemListElement: filteredProducts.slice(0, 20).map((p: any, i: number) => ({
+        '@type': 'ListItem',
+        position: i + 1,
+        url: routes.productCanonical(p.slug || generateProductSlug(p.title, p.id))
+      }))
+    }
+  };
+
   return (
-    <div className="max-w-7xl mx-auto px-6 py-12 flex flex-col md:flex-row gap-8">
+    <>
+      {/* Schema Injections */}
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbLd) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(collectionLd) }} />
+      
+      <div className="max-w-7xl mx-auto px-6 py-12 flex flex-col md:flex-row gap-8">
       {/* Sidebar Filters */}
       <FilterSidebar 
         categories={categoriesData || []} 
@@ -153,5 +196,6 @@ export default async function UrunlerPage({ searchParams }: { searchParams: { q?
         </div>
       </div>
     </div>
+    </>
   );
 }

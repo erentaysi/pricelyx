@@ -46,11 +46,16 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       .select('name');
 
     // Tüm Blogları Çek (Eğer blog tablosu varsa)
-    const { data: blogs } = await supabase
-      .from('blogs')
-      .select('slug, updated_at')
-      .order('updated_at', { ascending: false })
-      .catch(() => ({ data: [] })); // Tablo yoksa hata fırlatmasını önle
+    let blogs: any[] | null = [];
+    try {
+      const result = await supabase
+        .from('blogs')
+        .select('slug, updated_at')
+        .order('updated_at', { ascending: false });
+      blogs = result.data;
+    } catch (e) {
+      // Blog tablosu yoksa hatayı yut
+    }
 
     const productPages: MetadataRoute.Sitemap = (products || []).map((product) => ({
       url: `${baseUrl}/urunler/${product.slug}`,

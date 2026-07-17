@@ -45,7 +45,9 @@ export const metadata: Metadata = {
     description: "Kaliteden ödün vermeden en iyi fiyata ulaşın.",
   },
   alternates: {
-    canonical: 'https://www.piinti.com',
+    languages: {
+      'tr-TR': '/',
+    },
   },
   verification: {
     google: "5TdZaOAWcRe2uFNBAaQeuJRV9jrGhnu_gPKcj6NtJoc",

@@ -1,14 +1,18 @@
 import { notFound } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import { extractIdFromSlug, appendAffiliateTag, generateSeoSlug } from '@/lib/utils';
+import { routes } from '@/lib/routes';
 import SearchForm from '@/app/components/SearchForm';
 import Link from 'next/link';
 import PriceHistoryChart from '@/app/components/PriceHistoryChart';
-import PriceAlertModal from '@/app/components/PriceAlertModal';
+import dynamic from 'next/dynamic';
+const PriceAlertModal = dynamic(() => import('@/app/components/PriceAlertModal'), { ssr: false });
 import ReviewSummary from '@/app/components/ReviewSummary';
 import PriceBadges from '@/app/components/PriceBadges';
 import StoreListView from '@/app/components/StoreListView';
 import FavoriteButton from '@/app/components/FavoriteButton';
+import AiCoachWidget from '@/app/components/AiCoachWidget';
+import ScoreWidget from '@/app/components/ScoreWidget';
 import { 
   Star, 
   Truck, 
@@ -19,12 +23,13 @@ import {
   ShieldCheck,
   Zap,
   Flame,
-  ArrowRight
+  ArrowRight,
+  Sparkles
 } from 'lucide-react';
 import { analyzePriceTrend } from '@/lib/analytics';
 import Image from 'next/image';
-
 import { Metadata } from 'next';
+import { generateSeoMetadata, generateProductSchema } from '@/lib/seo';
 
 export const revalidate = 3600;
 
@@ -44,29 +49,16 @@ export async function generateMetadata({ params }: { params: { slug: string } })
   const brandObj: any = Array.isArray(product.brands) ? product.brands[0] : product.brands;
   const brandName = brandObj?.name || '';
 
-  const title = `${product.title} Fiyatları | En Uygun Fiyat - Piinti`;
-  const description = `${product.title} ürününün Trendyol, Amazon, Hepsiburada fiyatlarını karşılaştırın. En ucuz fiyatı bulun, fiyat geçmişini inceleyin.`;
+  const title = `${product.title} Fiyatları | En Uygun Fiyat`;
+  const description = `${brandName} ${product.title} ürününün en ucuz fiyatını bulun, fiyat geçmişini inceleyin. Trendyol, Amazon ve Hepsiburada fiyatlarını karşılaştırın.`;
+  const canonicalUrl = routes.productCanonical(params.slug);
 
-  return {
+  return generateSeoMetadata({
     title,
     description,
-    alternates: {
-      canonical: `https://piinti.com/urunler/${params.slug}`
-    },
-    openGraph: {
-      title,
-      description,
-      url: `https://piinti.com/urunler/${params.slug}`,
-      type: 'website',
-      images: [product.image_url || 'https://www.piinti.com/og-image.jpg']
-    },
-    twitter: {
-      card: 'summary_large_image',
-      title,
-      description,
-      images: [product.image_url || 'https://www.piinti.com/og-image.jpg']
-    }
-  };
+    path: canonicalUrl,
+    imageUrl: product.image_url?.replace('http://', 'https://'),
+  });
 }
 
 export default async function UrunDetay({ params }: { params: { slug: string } }) {
@@ -202,6 +194,7 @@ export default async function UrunDetay({ params }: { params: { slug: string } }
     .sort((a: any, b: any) => new Date(a.recorded_at).getTime() - new Date(b.recorded_at).getTime())
     .map((h: any) => ({
       date: h.recorded_at,
+      recorded_at: h.recorded_at,
       price: h.price,
       vendor: h.vendors?.name || 'Bilinmeyen Mağaza'
     }));
@@ -210,9 +203,9 @@ export default async function UrunDetay({ params }: { params: { slug: string } }
     '@context': 'https://schema.org',
     '@type': 'BreadcrumbList',
     itemListElement: [
-      { '@type': 'ListItem', position: 1, name: 'Ana Sayfa', item: 'https://piinti.com/' },
-      ...(categoryName ? [{ '@type': 'ListItem', position: 2, name: categoryName, item: `https://piinti.com/kategori/${generateSeoSlug(categoryName)}` }] : []),
-      { '@type': 'ListItem', position: categoryName ? 3 : 2, name: product.title, item: `https://piinti.com/urunler/${params.slug}` }
+      { '@type': 'ListItem', position: 1, name: 'Ana Sayfa', item: routes.home() },
+      ...(categoryName ? [{ '@type': 'ListItem', position: 2, name: categoryName, item: routes.categoryCanonical(generateSeoSlug(categoryName)) }] : []),
+      { '@type': 'ListItem', position: categoryName ? 3 : 2, name: product.title, item: routes.productCanonical(params.slug) }
     ]
   };
 
@@ -251,7 +244,7 @@ export default async function UrunDetay({ params }: { params: { slug: string } }
     <main className="min-h-screen pb-16 bg-gray-50">
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify([productLd, breadcrumbLd, faqLd]) }}
+        dangerouslySetInnerHTML={{ __html: JSON.stringify([productLd, breadcrumbLd, faqLd]).replace(/</g, '\\u003c') }}
       />
       <div className="bg-white border-b border-slate-100 py-6 sticky top-0 z-40 shadow-sm backdrop-blur-md bg-white/90">
         <div className="max-w-7xl mx-auto px-6">
@@ -372,13 +365,7 @@ export default async function UrunDetay({ params }: { params: { slug: string } }
                   <div className="bg-indigo-50 text-primary px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest border border-indigo-100">Son 90 Gün</div>
                 </div>
                 
-                {/* SEO Invisible Chart Image for Indexing */}
-                <img 
-                  src={product.image_url?.replace('http://', 'https://') || '/logo.jpg'} 
-                  alt={`${product.title} fiyat geçmişi ve değişim grafiği`}
-                  className="hidden" 
-                  aria-hidden="true" 
-                />
+
                 
                 <PriceHistoryChart historyData={recentHistory} productName={product.title} />
             </div>
@@ -480,6 +467,16 @@ export default async function UrunDetay({ params }: { params: { slug: string } }
               Kullanıcı yorumları, teknik özellikleri ve mağaza güvenilirlik puanlarını inceleyerek <em>{brandName}</em> marka bu modeli en güvenli ve en uygun fiyata satın alabilirsiniz.
             </p>
           </div>
+        </div>
+
+        {/* AI Coach + Score Widget (Side by Side on Desktop) */}
+        <div className="mt-12 max-w-7xl mx-auto px-6 grid grid-cols-1 lg:grid-cols-3 gap-8">
+           <div className="lg:col-span-2">
+             <AiCoachWidget productId={product.id} />
+           </div>
+           <div>
+             <ScoreWidget productId={product.id} />
+           </div>
         </div>
 
         {/* INTERNAL LINKING (SEO) */}
