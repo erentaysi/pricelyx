@@ -41,13 +41,14 @@ export default async function Home() {
       .select(`
         id, title, image_url, rating, reviews_count, is_trend, category_id,
         brands (name),
-        product_prices (price, original_price, vendor_id, vendors(id, name))
+        product_prices!inner (price, original_price, vendor_id, vendors(id, name))
       `)
       .order('created_at', { ascending: false })
       .limit(500)
   ]);
 
-  const productsList = allProducts || [];
+  // Sadece en az 1 fiyatı olan (fiyatı toplanmış) ürünleri listele
+  const productsList = (allProducts || []).filter(p => p.product_prices && p.product_prices.length > 0);
 
   // Çeşitlilik sağlayan fonksiyon (Aynı kategoriden max 2 ürün alır)
   const getDiverseProducts = (pool: any[], max: number) => {
@@ -202,16 +203,16 @@ export default async function Home() {
       {/* Premium Category Menu */}
       <section className="py-6 bg-white border-b border-slate-100 shadow-[0_4px_20px_-10px_rgba(0,0,0,0.05)] sticky top-[72px] z-30">
           <div className="container mx-auto px-4">
-              <div className="flex overflow-x-auto hide-scrollbar gap-4 md:justify-center pb-2 md:pb-0 px-2">
+              <div className="flex overflow-x-auto hide-scrollbar gap-4 pb-2 md:pb-0 px-2">
                   {dbCategories?.map(cat => {
                       const count = productsList.filter(p => p.category_id === cat.id).length;
                       return (
                           <Link 
                             href={`/urunler?cat=${cat.name}`} 
                             key={cat.id}
-                            className="flex items-center gap-3 bg-slate-50 hover:bg-primary/5 text-slate-700 hover:text-primary px-5 py-3 rounded-2xl whitespace-nowrap transition-all duration-300 border border-slate-100 hover:border-primary/20 group shadow-sm hover:shadow-md hover:-translate-y-0.5"
+                            className="flex items-center gap-3 bg-slate-50 hover:bg-primary/5 text-slate-700 hover:text-primary px-5 py-3 rounded-2xl whitespace-nowrap transition-all duration-300 border border-slate-100 hover:border-primary/20 group shadow-sm hover:shadow-md hover:-translate-y-0.5 flex-none min-w-max"
                           >
-                              <div className="w-8 h-8 rounded-xl bg-white flex items-center justify-center shadow-sm border border-slate-100 group-hover:scale-110 transition-transform duration-300">
+                              <div className="w-8 h-8 rounded-xl bg-white flex items-center justify-center shadow-sm border border-slate-100 group-hover:scale-110 transition-transform duration-300 shrink-0">
                                 {categoryIcons[cat.slug] || <Sparkles className="w-4 h-4 text-slate-400 group-hover:text-primary" />}
                               </div>
                               <div className="flex flex-col">

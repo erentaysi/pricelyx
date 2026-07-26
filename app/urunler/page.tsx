@@ -51,7 +51,7 @@ export default async function UrunlerPage({ searchParams }: { searchParams: { q?
     *,
     brands${brand ? '!inner' : ''}(name),
     categories!inner(name, slug),
-    product_prices(price, vendor_id, vendors(id, name)),
+    product_prices!inner(price, vendor_id, vendors(id, name)),
     price_history(price, recorded_at)
   `).order('created_at', { ascending: false });
 
@@ -67,6 +67,9 @@ export default async function UrunlerPage({ searchParams }: { searchParams: { q?
 
   const { data: products } = await query;
   let filteredProducts = products || [];
+
+  // Sadece en az 1 fiyatı olan (fiyatı toplanmış) ürünleri listele
+  filteredProducts = filteredProducts.filter((p: any) => p.product_prices && p.product_prices.length > 0);
 
   // Client-side filtering for price because price_history is a joined array
   if (min_price || max_price) {

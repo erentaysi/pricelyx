@@ -21,3 +21,8 @@ Bu proje için AI asistanların uyması gereken GÜVENLİK, PERFORMANS ve UX kur
 ## 4. 📈 SEO VE GELECEKTEKİ MOBİL UYGULAMA HAZIRLIĞI
 - **Dinamik SEO & Schema.org:** İndirim kuponu ve ürün sayfaları `generateMetadata` ile dinamik başlık/açıklama üretmeli ve mutlaka `<script type="application/ld+json">` kullanarak Schema.org `Coupon` / `Offer` işaretlemelerini sayfaya dahil etmelidir.
 - **API-Driven Mantık:** Supabase işlemleri doğrudan RESTful prensiplere uygun yazılmalı, mobil uygulama (React Native/Flutter) için de veriler kolayca alınabilecek şeffaflıkta olmalıdır.
+
+
+## 5. 🛑 KRİTİK VERİ GÜVENLİĞİ VE SİLME (DELETE) KURALLARI
+- **Yedek Alma ve Onay:** Veritabanında (Supabase vb.) toplu veya tekil herhangi bir DELETE işlemi yapmadan ÖNCE mutlaka verilerin bir yedeğini (CSV export, JSON dump veya yedek tablo) oluşturmalısın.
+- **Kullanıcı Onayı:** Yedekleme işlemi tamamlandıktan sonra, silinecek verilerin özetini kullanıcıya sunmalı ve silme işlemini gerçekleştirmek için KESİNLİKLE ONAY BEKLEMELİSİN. Onay almadan asla veri silme.

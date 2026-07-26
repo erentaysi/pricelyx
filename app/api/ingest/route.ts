@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { supabase } from '@/lib/supabase';
+import { supabaseAdmin as supabase } from '@/lib/supabase';
 import { generateProductSlug } from '@/lib/utils';
 
 export const dynamic = 'force-dynamic';
@@ -119,16 +119,31 @@ export async function POST(request: Request) {
 
         // 3. Satıcıyı Belirle (URL üzerinden otomatik tahmin)
         let vendorName = item.vendor || 'Bilinmiyor';
-        if (vendorName === 'Bilinmiyor') {
-          if (url.includes('amazon.com.tr')) vendorName = 'Amazon TR';
-          else if (url.includes('trendyol.com')) vendorName = 'Trendyol';
-          else if (url.includes('hepsiburada.com')) vendorName = 'Hepsiburada';
-          else if (url.includes('n11.com')) vendorName = 'n11';
-          else if (url.includes('ciceksepeti.com')) vendorName = 'Çiçeksepeti';
+        if (vendorName === 'Bilinmiyor' && url && url !== '#') {
+          try {
+            const urlString = url.startsWith('http') ? url : `https://${url}`;
+            const urlObj = new URL(urlString);
+            let domain = urlObj.hostname.replace('www.', '');
+            
+            const tlds = ['.com.tr', '.co.uk', '.net.tr', '.org.tr', '.edu.tr', '.com', '.net', '.org', '.io', '.co'];
+            for (const tld of tlds) {
+              if (domain.endsWith(tld)) {
+                domain = domain.substring(0, domain.length - tld.length);
+                break;
+              }
+            }
+            
+            const parts = domain.split('.');
+            vendorName = parts[parts.length - 1];
+            // İlk harfi büyüt
+            vendorName = vendorName.charAt(0).toUpperCase() + vendorName.slice(1);
+          } catch (e) {
+            // URL parse edilemezse fallback
+          }
         }
 
         let vendorObj = vendors?.find(v => v.name.toLowerCase() === vendorName.toLowerCase());
-        if (!vendorObj && vendorName !== 'Bilinmiyor') {
+        if (!vendorObj) {
           const { data: newVendor } = await supabase.from('vendors').insert({ name: vendorName }).select().single();
           if (newVendor) {
             vendors?.push(newVendor);
