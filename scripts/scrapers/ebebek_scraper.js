@@ -4,7 +4,7 @@ puppeteer.use(StealthPlugin());
 require('dotenv').config({ path: './.env.local' });
 const { createClient } = require('@supabase/supabase-js');
 const { upsertPriceAndHistory } = require('./price_helper');
-const { findCanonicalProduct } = require('./product_matcher');
+const { findCanonicalProduct, findProductByBarcode, cleanBarcode } = require('./product_matcher');
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL,
@@ -108,46 +108,88 @@ async function run() {
     
     await randomDelay(); // Anti-bot rate limit
     
-    // 1. Ürünü Ekle (Manuel Upsert - Canonical Bağlantısı ile)
+    // e-bebek ürün kodunu çıkar ve OCC API'den EAN barkodunu çek
+    let barcode = null;
+    const codeMatch = item.url.match(/-p-([a-zA-Z0-9-]+)/i);
+    const productCode = codeMatch ? codeMatch[1] : null;
+    if (productCode) {
+      try {
+        const apiRes = await fetch(`https://api2.e-bebek.com/ebebekwebservices/v2/ebebek/products/${productCode}?fields=FULL&lang=tr&curr=TRY`, {
+          headers: { 'User-Agent': 'Mozilla/5.0' }
+        });
+        if (apiRes.ok) {
+          const apiData = await apiRes.json();
+          if (apiData.ean) {
+            barcode = cleanBarcode(apiData.ean);
+          }
+        }
+      } catch (e) {
+        // API hatası olursa devam et
+      }
+    }
+
+    // Fallback: Görsel URL'sindeki 13 haneli barkod deseni
+    if (!barcode && item.image_url) {
+      const imgEanMatch = item.image_url.match(/_(\d{8,14})_/);
+      if (imgEanMatch) {
+        barcode = cleanBarcode(imgEanMatch[1]);
+      }
+    }
+
+    // 1. Ürün Eşleştirme (Barkod Öncelikli Mimari)
     let productId = null;
-    const { data: existingP } = await supabase.from('products').select('id').eq('title', item.title).single();
-    
-    if (existingP) {
-      productId = existingP.id;
-    } else {
-      let canonicalId = null;
-      // Not: ebebek scraper'da bId şu an kullanılmıyor ama ileride eklenirse diye hazır
-      // item.brand string geldiği için marka ID'sini bulmamız lazım
-      let bId = null;
-      if (item.brand) {
-         const { data: bData } = await supabase.from('brands').select('id').eq('name', item.brand).single();
-         if (bData) bId = bData.id;
-      }
 
-      if (bId) {
-        canonicalId = await findCanonicalProduct(supabase, item.title, bId);
+    // (1) Önce Barkod ile Eşleştir
+    if (barcode) {
+      productId = await findProductByBarcode(supabase, barcode);
+      if (productId) {
+        console.log(`🎯 [BARKOD EŞLEŞTİ] "${item.title}" barkod (${barcode}) ile mevcut ürüne bağlandı (ID: ${productId})`);
       }
+    }
 
-      const { data: productData, error: productErr } = await supabase
-        .from('products')
-        .insert({
-          title: item.title,
-          brand_id: bId,
-          image_url: item.image_url,
-          category_id: CATEGORY_ID,
-          canonical_id: canonicalId
-        })
-        .select('id')
-        .single();
-
-      if (productErr) {
-        console.log(`[ATLANDI] ${item.title} -> ${productErr.message}`);
-        continue;
-      }
-      productId = productData.id;
+    // (2) Barkod eşleşmediyse veya yoksa: Mevcut marka + başlık benzerliği (%75)
+    if (!productId) {
+      const { data: existingP } = await supabase.from('products').select('id, barcode').eq('title', item.title).limit(1).maybeSingle();
       
-      if (canonicalId) {
-        console.log(`🔗 [CANONICAL BAĞLANTI] "${item.title}" ürünü Parent ürüne bağlandı (Parent ID: ${canonicalId})`);
+      if (existingP) {
+        productId = existingP.id;
+        if (!existingP.barcode && barcode) {
+          await supabase.from('products').update({ barcode }).eq('id', productId);
+        }
+      } else {
+        let canonicalId = null;
+        let bId = null;
+        if (item.brand) {
+           const { data: bData } = await supabase.from('brands').select('id').eq('name', item.brand).single();
+           if (bData) bId = bData.id;
+        }
+
+        if (bId) {
+          canonicalId = await findCanonicalProduct(supabase, item.title, bId);
+        }
+
+        const { data: productData, error: productErr } = await supabase
+          .from('products')
+          .insert({
+            title: item.title,
+            brand_id: bId,
+            image_url: item.image_url,
+            category_id: CATEGORY_ID,
+            canonical_id: canonicalId,
+            barcode: barcode || null
+          })
+          .select('id')
+          .single();
+
+        if (productErr) {
+          console.log(`[ATLANDI] ${item.title} -> ${productErr.message}`);
+          continue;
+        }
+        productId = productData.id;
+        
+        if (canonicalId) {
+          console.log(`🔗 [CANONICAL BAĞLANTI] "${item.title}" ürünü Parent ürüne bağlandı (Parent ID: ${canonicalId})`);
+        }
       }
     }
 

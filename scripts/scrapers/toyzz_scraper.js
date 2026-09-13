@@ -4,7 +4,7 @@ puppeteer.use(StealthPlugin());
 require('dotenv').config({ path: './.env.local' });
 const { createClient } = require('@supabase/supabase-js');
 const { upsertPriceAndHistory } = require('./price_helper');
-const { findCanonicalProduct } = require('./product_matcher');
+const { findCanonicalProduct, findProductByBarcode, cleanBarcode } = require('./product_matcher');
 
 const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY);
 
@@ -90,6 +90,37 @@ async function run() {
   for (const item of products) {
     await randomDelay(); 
     
+    // Toyzz Core API üzerinden ürünün barkodunu çek
+    let barcode = null;
+    try {
+      const urlObj = new URL(item.url);
+      const slug = urlObj.pathname.replace(/^\/+|\/+$/g, '');
+      if (slug) {
+        const metaRes = await fetch('https://core.toyzzshop.com/api/sys/meta-data', {
+          method: 'POST',
+          headers: { 'content-type': 'application/json', 'positive-client': 'toyzzshop' },
+          body: JSON.stringify({ url: slug })
+        });
+        if (metaRes.ok) {
+          const metaData = await metaRes.json();
+          const parts = metaData.payload?.meta_data?.split('::');
+          if (parts && parts[0] === 'product' && parts[1] && parts[2]) {
+            const viewRes = await fetch(`https://core.toyzzshop.com/api/products/view/${parts[1]}/${parts[2]}`, {
+              headers: { 'positive-client': 'toyzzshop' }
+            });
+            if (viewRes.ok) {
+              const viewData = await viewRes.json();
+              if (viewData.payload?.product?.barcode) {
+                barcode = cleanBarcode(viewData.payload.product.barcode);
+              }
+            }
+          }
+        }
+      }
+    } catch (e) {
+      // API hatası olursa devam et
+    }
+
     let bId = null;
     if (item.brand) {
       const { data: bData } = await supabase.from('brands').select('id').eq('name', item.brand).single();
@@ -100,38 +131,54 @@ async function run() {
       }
     }
     
-    // 2. Ürünü Ekle (Manuel Upsert - Canonical Bağlantısı ile)
+    // 1. Ürün Eşleştirme (Barkod Öncelikli Mimari)
     let productId = null;
-    const { data: existingP } = await supabase.from('products').select('id').eq('title', item.title).single();
-    
-    if (existingP) {
-      productId = existingP.id;
-    } else {
-      let canonicalId = null;
-      if (bId) {
-        canonicalId = await findCanonicalProduct(supabase, item.title, bId);
-      }
 
-      const { data: productData, error: productErr } = await supabase
-        .from('products')
-        .insert({
-          title: item.title,
-          brand_id: bId,
-          image_url: item.image_url,
-          category_id: CATEGORY_ID,
-          canonical_id: canonicalId
-        })
-        .select('id')
-        .single();
-
-      if (productErr) {
-        console.log(`[ATLANDI] ${item.title} -> ${productErr.message}`);
-        continue;
+    // (1) Önce Barkod ile Eşleştir
+    if (barcode) {
+      productId = await findProductByBarcode(supabase, barcode);
+      if (productId) {
+        console.log(`🎯 [BARKOD EŞLEŞTİ] "${item.title}" barkod (${barcode}) ile mevcut ürüne bağlandı (ID: ${productId})`);
       }
-      productId = productData.id;
+    }
+
+    // (2) Barkod eşleşmediyse veya yoksa: Mevcut marka + başlık benzerliği (%75)
+    if (!productId) {
+      const { data: existingP } = await supabase.from('products').select('id, barcode').eq('title', item.title).limit(1).maybeSingle();
       
-      if (canonicalId) {
-        console.log(`🔗 [CANONICAL BAĞLANTI] "${item.title}" ürünü Parent ürüne bağlandı (Parent ID: ${canonicalId})`);
+      if (existingP) {
+        productId = existingP.id;
+        if (!existingP.barcode && barcode) {
+          await supabase.from('products').update({ barcode }).eq('id', productId);
+        }
+      } else {
+        let canonicalId = null;
+        if (bId) {
+          canonicalId = await findCanonicalProduct(supabase, item.title, bId);
+        }
+
+        const { data: productData, error: productErr } = await supabase
+          .from('products')
+          .insert({
+            title: item.title,
+            brand_id: bId,
+            image_url: item.image_url,
+            category_id: CATEGORY_ID,
+            canonical_id: canonicalId,
+            barcode: barcode || null
+          })
+          .select('id')
+          .single();
+
+        if (productErr) {
+          console.log(`[ATLANDI] ${item.title} -> ${productErr.message}`);
+          continue;
+        }
+        productId = productData.id;
+        
+        if (canonicalId) {
+          console.log(`🔗 [CANONICAL BAĞLANTI] "${item.title}" ürünü Parent ürüne bağlandı (Parent ID: ${canonicalId})`);
+        }
       }
     }
 

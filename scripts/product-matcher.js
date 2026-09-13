@@ -95,11 +95,35 @@ function similarityScore(title1, title2) {
   return intersection.size / union.size;
 }
 
+function extractModelCode(title) {
+  // 1. Kapasite, miktar ve teknoloji birimlerini gizle (ör: 128GB, 4K, 50ml, 1200w, 5G) 
+  let cleanTitle = title.replace(/\b(\d+(?:GB|TB|MB|KG|GR|ML|L|W|V|MAH|HZ|INÇ|INC|K|G))\b/gi, '');
+  
+  // 2. Özel patternler: Yan yana duran harf+rakam karışımları 
+  // veya içinde tire/slash olan kombinasyonlar (min 4, max 15 karakter)
+  const matches = cleanTitle.match(/\b[A-Za-z0-9\-\/]{4,15}\b/g) || [];
+  
+  for (let m of matches) {
+    const stripped = m.replace(/[^A-Z0-9]/gi, ''); // Tire ve slash'leri at
+    
+    // Sadece harf veya sadece rakam olanları geç
+    if (/^\d+$/.test(stripped)) continue; 
+    if (/^[A-Za-z]+$/.test(stripped)) continue;
+    
+    // Miktar belirten ekleri geç
+    if (stripped.toLowerCase().match(/^\d+(lu|li|adet|li|lik)$/)) continue;
+    
+    return stripped.toUpperCase();
+  }
+  
+  return null;
+}
+
 /**
  * Veritabanında bir ürünün eşleşmesini arar.
  * Bulamazsa null döner, bulursa ürün ID'sini döner.
  */
-async function findMatchingProduct(cleanTitle) {
+async function findMatchingProduct(cleanTitle, brandId) {
   const normalized = normalizeTitle(cleanTitle);
   const keywords = generateSearchKeywords(normalized);
   
@@ -109,16 +133,52 @@ async function findMatchingProduct(cleanTitle) {
   const searchTerms = keywords.slice(0, Math.min(4, keywords.length));
   
   // Supabase'de ILIKE ile tüm anahtar kelimelerin geçtiği ürünleri ara
-  let query = supabase.from('products').select('id, title');
+  let query = supabase.from('products').select('id, title, brand_id');
   for (const term of searchTerms) {
     query = query.ilike('title', `%${term}%`);
   }
   
-  const { data: candidates } = await query.limit(10);
+  let { data: candidates } = await query.limit(20);
   
+  // Eğer keyword search ile aday bulamadıysak ve brandId varsa,
+  // model kodunu esnek bulabilmek için o markanın son 50 ürününü aday olarak ekleyelim
+  const incomingModelCode = extractModelCode(cleanTitle);
+  
+  if (incomingModelCode && brandId) {
+    const { data: brandCandidates } = await supabase.from('products')
+      .select('id, title, brand_id')
+      .eq('brand_id', brandId)
+      .order('id', { ascending: false })
+      .limit(50);
+      
+    if (brandCandidates) {
+       // Merge arrays ensuring unique candidates
+       candidates = candidates || [];
+       const existingIds = new Set(candidates.map(c => c.id));
+       for (const bc of brandCandidates) {
+         if (!existingIds.has(bc.id)) {
+           candidates.push(bc);
+         }
+       }
+    }
+  }
+
   if (!candidates || candidates.length === 0) return null;
   
-  // En yüksek benzerlik skoru olanı seç
+  // 1. ÖNCELİK: Model Kodu ve Marka Eşleşmesi (Kesin Eşleşme)
+  if (incomingModelCode && brandId) {
+    for (const candidate of candidates) {
+      if (candidate.brand_id === brandId) {
+        const candidateModelCode = extractModelCode(candidate.title);
+        if (candidateModelCode === incomingModelCode) {
+          // Kesin eşleşme bulundu!
+          return candidate.id;
+        }
+      }
+    }
+  }
+  
+  // 2. ÖNCELİK: İsim Benzerliği (%60 Barajı)
   let bestMatch = null;
   let bestScore = 0;
   
@@ -218,8 +278,8 @@ async function matchAndSaveProduct({ title, price, image, url, vendorId, shippin
       cleanTitle = brandName + ' ' + cleanTitle;
   }
   
-  // Eşleşen ürün ara
-  let productId = await findMatchingProduct(cleanTitle);
+  // Eşleşen ürün ara (Model Kodu ve Marka ID ile)
+  let productId = await findMatchingProduct(cleanTitle, brandObj?.id);
   
   if (!productId) {
     // Yeni ürün oluştur

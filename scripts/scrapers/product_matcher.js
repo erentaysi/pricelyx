@@ -63,6 +63,42 @@ async function findCanonicalProduct(supabase, title, brandId) {
   return bestMatch;
 }
 
+/**
+ * Barkod değerini rakam dışı tüm karakterlerden (boşluk, tire vb.) arındırır.
+ * @param {string|number} barcode
+ * @returns {string|null}
+ */
+function cleanBarcode(barcode) {
+  if (!barcode) return null;
+  const cleaned = String(barcode).trim().replace(/\D/g, '');
+  return cleaned.length >= 6 ? cleaned : null;
+}
+
+/**
+ * Verilen barkod ile products tablosunda eşleşen ürün var mı kontrol eder.
+ * @param {object} supabase
+ * @param {string|number} rawBarcode
+ * @returns {Promise<string|null>} Eşleşen ürünün id'si veya null
+ */
+async function findProductByBarcode(supabase, rawBarcode) {
+  const barcode = cleanBarcode(rawBarcode);
+  if (!barcode) return null;
+
+  const { data, error } = await supabase
+    .from('products')
+    .select('id, barcode, title')
+    .eq('barcode', barcode)
+    .limit(1)
+    .maybeSingle();
+
+  if (error || !data) return null;
+  return data.id;
+}
+
 module.exports = {
-  findCanonicalProduct
+  normalizeTitle,
+  calculateSimilarity,
+  findCanonicalProduct,
+  cleanBarcode,
+  findProductByBarcode
 };

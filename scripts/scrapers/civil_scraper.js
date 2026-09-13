@@ -1,7 +1,7 @@
 require('dotenv').config({ path: './.env.local' });
 const { createClient } = require('@supabase/supabase-js');
 const { upsertPriceAndHistory } = require('./price_helper');
-const { findCanonicalProduct } = require('./product_matcher');
+const { findCanonicalProduct, findProductByBarcode, cleanBarcode } = require('./product_matcher');
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL,
@@ -62,6 +62,21 @@ async function run() {
        continue;
     }
 
+    // Civil .js endpoint'inden varyant barkodunu çek
+    let barcode = null;
+    try {
+      const jsRes = await fetch(`https://www.civilim.com/products/${item.handle}.js`);
+      if (jsRes.ok) {
+        const jsData = await jsRes.json();
+        const activeVar = jsData.variants?.find(v => v.barcode && String(v.barcode).trim().length > 0);
+        if (activeVar) {
+          barcode = cleanBarcode(activeVar.barcode);
+        }
+      }
+    } catch (e) {
+      // Endpoint hatası olursa sessizce fallback'e geç
+    }
+
     // Brand (Marka) ID'sini al veya oluştur
     let bId = null;
     if (brand) {
@@ -73,28 +88,44 @@ async function run() {
       }
     }
 
-    // 1. Ürün upsert (manuel kontrol)
+    // 1. Ürün Eşleştirme (Barkod Öncelikli Mimari)
     let pId = null;
-    const { data: existingP } = await supabase.from('products').select('id').eq('title', title).single();
-    
-    if (existingP) {
-      pId = existingP.id;
-    } else {
-      // Yeni ürün oluşturulacak, Canonical Parent var mı diye sor:
-      let canonicalId = null;
-      if (bId) {
-        canonicalId = await findCanonicalProduct(supabase, title, bId);
-      }
 
-      const { data: newP, error: pErr } = await supabase.from('products').insert([{
-        title, brand_id: bId, image_url, category_id: CATEGORY_ID, canonical_id: canonicalId
-      }]).select('id').single();
+    // (1) Önce Barkod ile Eşleştir
+    if (barcode) {
+      pId = await findProductByBarcode(supabase, barcode);
+      if (pId) {
+        console.log(`🎯 [BARKOD EŞLEŞTİ] "${title}" barkod (${barcode}) ile mevcut ürüne bağlandı (ID: ${pId})`);
+      }
+    }
+
+    // (2) Barkod eşleşmediyse veya yoksa: Mevcut marka + başlık benzerliği (%75)
+    if (!pId) {
+      const { data: existingP } = await supabase.from('products').select('id, barcode').eq('title', title).limit(1).maybeSingle();
       
-      if (pErr) { console.log(`[HATA - ÜRÜN] ${title} -> ${pErr.message}`); continue; }
-      pId = newP.id;
-      
-      if (canonicalId) {
-        console.log(`🔗 [CANONICAL BAĞLANTI] "${title}" ürünü (ID: ${pId}) Parent ürüne bağlandı (Parent ID: ${canonicalId})`);
+      if (existingP) {
+        pId = existingP.id;
+        // Mevcut üründe barkod eksikse ve yenisinde varsa güncelle
+        if (!existingP.barcode && barcode) {
+          await supabase.from('products').update({ barcode }).eq('id', pId);
+        }
+      } else {
+        // Yeni ürün oluşturulacak, Canonical Parent var mı diye bak:
+        let canonicalId = null;
+        if (bId) {
+          canonicalId = await findCanonicalProduct(supabase, title, bId);
+        }
+
+        const { data: newP, error: pErr } = await supabase.from('products').insert([{
+          title, brand_id: bId, image_url, category_id: CATEGORY_ID, canonical_id: canonicalId, barcode: barcode || null
+        }]).select('id').single();
+        
+        if (pErr) { console.log(`[HATA - ÜRÜN] ${title} -> ${pErr.message}`); continue; }
+        pId = newP.id;
+        
+        if (canonicalId) {
+          console.log(`🔗 [CANONICAL BAĞLANTI] "${title}" ürünü (ID: ${pId}) Parent ürüne bağlandı (Parent ID: ${canonicalId})`);
+        }
       }
     }
 
