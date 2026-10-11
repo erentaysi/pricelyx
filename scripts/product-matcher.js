@@ -96,8 +96,10 @@ function similarityScore(title1, title2) {
 }
 
 function extractModelCode(title) {
-  // 1. Kapasite, miktar ve teknoloji birimlerini gizle (ör: 128GB, 4K, 50ml, 1200w, 5G) 
-  let cleanTitle = title.replace(/\b(\d+(?:GB|TB|MB|KG|GR|ML|L|W|V|MAH|HZ|INÇ|INC|K|G))\b/gi, '');
+  // 1. Kapasite, miktar ve teknoloji birimlerini gizle (ör: 128GB, 4K, 50ml, 1200w, 5G, 50MP) 
+  let cleanTitle = title.replace(/\b(\d+(?:GB|TB|MB|KG|GR|ML|L|W|V|MAH|HZ|INÇ|INC|K|G|MP))\b/gi, '');
+  // IP derecelendirmelerini gizle (Ör: IP54, IP68)
+  cleanTitle = cleanTitle.replace(/\bIP\d{2}\b/gi, '');
   
   // 2. Özel patternler: Yan yana duran harf+rakam karışımları 
   // veya içinde tire/slash olan kombinasyonlar (min 4, max 15 karakter)
@@ -165,20 +167,7 @@ async function findMatchingProduct(cleanTitle, brandId) {
 
   if (!candidates || candidates.length === 0) return null;
   
-  // 1. ÖNCELİK: Model Kodu ve Marka Eşleşmesi (Kesin Eşleşme)
-  if (incomingModelCode && brandId) {
-    for (const candidate of candidates) {
-      if (candidate.brand_id === brandId) {
-        const candidateModelCode = extractModelCode(candidate.title);
-        if (candidateModelCode === incomingModelCode) {
-          // Kesin eşleşme bulundu!
-          return candidate.id;
-        }
-      }
-    }
-  }
-  
-  // 2. ÖNCELİK: İsim Benzerliği (%60 Barajı)
+  // Ortak benzerlik kontrolü (Ekstra güvenlik için önceden hesaplanan)
   let bestMatch = null;
   let bestScore = 0;
   
@@ -186,13 +175,22 @@ async function findMatchingProduct(cleanTitle, brandId) {
     const candidateNorm = normalizeTitle(candidate.title);
     const score = similarityScore(normalized, candidateNorm);
     
+    // 1. ÖNCELİK: Model Kodu ve Marka Eşleşmesi + Min %35 Benzerlik Şartı
+    if (incomingModelCode && brandId && candidate.brand_id === brandId) {
+      const candidateModelCode = extractModelCode(candidate.title);
+      if (candidateModelCode === incomingModelCode && score >= 0.35) {
+        // Model kodu tutuyor ve başlık en az %35 benziyor, kesin eşleşme!
+        return candidate.id;
+      }
+    }
+    
     if (score > bestScore) {
       bestScore = score;
       bestMatch = candidate;
     }
   }
   
-  // Minimum %60 benzerlik olmalı
+  // 2. ÖNCELİK: Model kodu yoksa İsim Benzerliği (%60 Barajı)
   if (bestScore >= 0.6) {
     return bestMatch.id;
   }

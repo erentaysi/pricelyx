@@ -3,6 +3,7 @@ import { supabaseAdmin as supabase } from '@/lib/supabase';
 import { generateProductSlug } from '@/lib/utils';
 
 export const dynamic = 'force-dynamic';
+export const maxDuration = 60;
 
 export async function POST(request: Request) {
   try {
@@ -49,13 +50,19 @@ export async function POST(request: Request) {
     const { data: vendors } = await supabase.from('vendors').select('id, name');
     
     let processedCount = 0;
+    let insertedCount = 0;
+    let updatedCount = 0;
+    let skippedCount = 0;
 
     // 4. Diziyi Teker Teker İşle
     for (const item of productsArray) {
       try {
         // Apify Amazon verisi yapılandırmasını güvene al
         const title = item.title || item.name;
-        if (!title) continue;
+        if (!title) {
+          skippedCount++;
+          continue;
+        }
 
         let extractedBrand = item.brand || 'Bilinmiyor';
         let rawPrice = item.price?.value !== undefined ? item.price.value : (item.priceAmount || item.price || 0);
@@ -165,11 +172,15 @@ export async function POST(request: Request) {
             console.error(`[Ingest Error] Fiyat arama hatası (Product ID: ${finalProductId}):`, priceFetchErr.message);
           }
 
+          const nowIso = new Date().toISOString();
+
           if (existingPrice) {
              const { error: priceUpdateErr } = await supabase.from('product_prices').update({
                price: extractedPrice,
                original_price: extractedOriginalPrice,
-               product_url: url
+               product_url: url,
+               updated_at: nowIso,
+               last_updated_at: nowIso
              }).eq('id', existingPrice.id);
              if (priceUpdateErr) console.error(`[Ingest Error] Fiyat güncellenemedi:`, priceUpdateErr.message);
 
@@ -182,6 +193,7 @@ export async function POST(request: Request) {
                 if (histErr) console.error(`[Ingest Error] Price History (Update) hatası:`, histErr.message);
              }
              console.log(`[Ingest Trace] Ürün fiyatı güncellendi: ${cleanTitle}`);
+             updatedCount++;
           } else {
              const { error: priceInsertErr } = await supabase.from('product_prices').insert({
                product_id: finalProductId,
@@ -189,7 +201,9 @@ export async function POST(request: Request) {
                price: extractedPrice,
                original_price: extractedOriginalPrice,
                product_url: url,
-               shipping_info: item.delivery || 'Ücretsiz Kargo'
+               shipping_info: item.delivery || 'Ücretsiz Kargo',
+               updated_at: nowIso,
+               last_updated_at: nowIso
              });
              if (priceInsertErr) console.error(`[Ingest Error] Fiyat eklenemedi:`, priceInsertErr.message);
 
@@ -200,14 +214,17 @@ export async function POST(request: Request) {
              });
              if (histErr2) console.error(`[Ingest Error] Price History (Insert) hatası:`, histErr2.message);
              console.log(`[Ingest Trace] Yeni ürün fiyatı eklendi: ${cleanTitle}`);
+             insertedCount++;
           }
           processedCount++;
         } else {
           console.error(`[Ingest Trace] SKIPPED: finalProductId=${finalProductId}, activeVendorId=${activeVendorId} | Ürün: ${cleanTitle}`);
+          skippedCount++;
         }
       } catch (itemErr) {
         console.error('Batch içinde tekil ürün işleme hatası:', itemErr);
         // Hatayı yut ve diğer ürüne devam et (Tüm batch çökmesin!)
+        skippedCount++;
         continue;
       }
     }
@@ -220,7 +237,13 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ 
       success: true, 
-      message: `${processedCount} adet ürün Apify üzerinden başarıyla veritabanına yutuldu ve fiyatları güncellendi!`
+      message: `${processedCount} adet ürün Apify üzerinden başarıyla işlendi!`,
+      stats: {
+        received: productsArray.length,
+        inserted: insertedCount,
+        updated: updatedCount,
+        skipped: skippedCount
+      }
     });
 
   } catch (error: any) {
