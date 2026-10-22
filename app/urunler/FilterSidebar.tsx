@@ -247,7 +247,8 @@ export default function FilterSidebar({
             )}
           </div>
 
-          {/* Fiyat Aralığı Filtresi */}
+          {/* Fiyat Aralığı Filtresi - DB seviyesinde min_price kolonu eklenene kadar şimdilik gizlendi */}
+          {/*
           <div>
             <h3 className="font-bold mb-4 text-slate-800">Fiyat Aralığı</h3>
             <div className="flex items-center gap-2 mb-3">
@@ -280,6 +281,7 @@ export default function FilterSidebar({
               Uygula
             </button>
           </div>
+          */}
 
           {/* Sıralama */}
           <div className="pt-6 mt-6 border-t border-slate-100">
@@ -300,6 +302,8 @@ export default function FilterSidebar({
                 <span className={`text-sm ${(!currentSort || currentSort === 'newest') ? 'font-bold' : 'font-medium'}`}>En Yeniler</span>
               </label>
               
+              {/* Fiyata göre sıralama (Artan / Azalan) DB seviyesine taşınana kadar şimdilik gizlendi */}
+              {/*
               <label className={`flex items-center gap-3 cursor-pointer p-2 rounded-lg transition-colors ${currentSort === 'price_asc' ? 'bg-slate-100 text-slate-900' : 'hover:bg-slate-50 text-slate-500'}`}>
                 <input 
                   type="radio" 
@@ -329,6 +333,7 @@ export default function FilterSidebar({
                 <div className={`w-3 h-3 rounded-full flex items-center justify-center ${currentSort === 'price_desc' ? 'border-4 border-primary' : 'border-2 border-slate-300'}`}></div>
                 <span className={`text-sm ${currentSort === 'price_desc' ? 'font-bold' : 'font-medium'}`}>Azalan Fiyat (En Pahalı)</span>
               </label>
+              */}
             </div>
           </div>
 
