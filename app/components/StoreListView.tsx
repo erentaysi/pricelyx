@@ -89,9 +89,13 @@ export default function StoreListView({ productId, prices }: StoreListViewProps)
                     <span className={`${stockColorClass} flex items-center gap-1.5`}>
                       • {stockInfo}
                     </span>
-                    {storeConfig.isStale && (
-                      <span className="text-amber-600 bg-amber-50 px-2 py-1 rounded-md flex items-center gap-1 border border-amber-200">
-                        ⚠️ Muhtemelen Güncel Değil
+                    {storeConfig.timeAgoText && (
+                      <span className={`px-2.5 py-1 rounded-md text-[10px] font-bold tracking-normal flex items-center gap-1 border ${
+                        storeConfig.isOlderThan7Days
+                          ? 'bg-amber-50 text-amber-700 border-amber-200'
+                          : 'bg-slate-100 text-slate-500 border-slate-200'
+                      }`}>
+                        {storeConfig.isOlderThan7Days && '⚠️ '}Son güncelleme: {storeConfig.timeAgoText}
                       </span>
                     )}
                   </div>

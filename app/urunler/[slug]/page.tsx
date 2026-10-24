@@ -95,7 +95,7 @@ export default async function UrunDetay({ params }: { params: { slug: string } }
   const { data: familyPrices } = await supabase
     .from('product_prices')
     .select(`
-      price, original_price, shipping_info, product_url, in_stock, vendor_id, last_updated_at,
+      price, original_price, shipping_info, product_url, in_stock, vendor_id, last_updated_at, updated_at, created_at,
       vendors (id, name, logo, color)
     `)
     .in('product_id', familyIds);
@@ -124,20 +124,54 @@ export default async function UrunDetay({ params }: { params: { slug: string } }
   const brandName = brandObj?.name;
   
   const rawPrices = familyPrices || [];
-  
+
   const now = new Date();
   const validPrices = rawPrices.map((p: any) => {
+    const dateStr = p.last_updated_at || p.updated_at || p.created_at;
     let hoursDiff = 0;
-    if (p.last_updated_at) {
-      const updatedTime = new Date(p.last_updated_at);
-      hoursDiff = (now.getTime() - updatedTime.getTime()) / (1000 * 60 * 60);
-    }
-    return { ...p, hoursDiff, isStale: hoursDiff > 48 };
-  }).filter((p: any) => p.hoursDiff <= 72); // 72 saati geçenleri arayüzden gizle
+    let daysDiff = 0;
+    let timeAgoText = 'Bilinmiyor';
+    let isOlderThan7Days = false;
 
-  const lowestPrice = validPrices.length > 0 ? Math.min(...validPrices.map((p:any) => p.price)) : 0;
-  const highestPrice = validPrices.length > 0 ? Math.max(...validPrices.map((p:any) => p.price)) : 0;
-  const sortedPrices = [...validPrices].sort((a:any, b:any) => a.price - b.price);
+    if (dateStr) {
+      const updatedTime = new Date(dateStr);
+      hoursDiff = Math.max(0, Math.floor((now.getTime() - updatedTime.getTime()) / (1000 * 60 * 60)));
+      daysDiff = Math.floor(hoursDiff / 24);
+      isOlderThan7Days = daysDiff >= 7;
+
+      if (hoursDiff < 1) {
+        timeAgoText = 'Az önce';
+      } else if (hoursDiff < 24) {
+        timeAgoText = `${hoursDiff} saat önce`;
+      } else {
+        timeAgoText = `${daysDiff} gün önce`;
+      }
+    }
+
+    return { 
+      ...p, 
+      hoursDiff, 
+      daysDiff, 
+      timeAgoText, 
+      isOlderThan7Days, 
+      isStale: hoursDiff > 48 
+    };
+  }); // ⚠️ 72 saatlik gizleme filtresi kaldırıldı, tüm fiyatlar korunuyor
+
+  const allPricesOlderThan7Days = validPrices.length > 0 && validPrices.every((p: any) => p.isOlderThan7Days);
+  const minDaysDiff = validPrices.length > 0 ? Math.min(...validPrices.map((p: any) => p.daysDiff)) : 0;
+
+  // Son 7 gün içinde güncellenmiş en az bir fiyat varsa sadece onlar arasından en düşüğü, hiç yoksa tüm fiyatlar arasından en düşüğü
+  const freshPrices = validPrices.filter((p: any) => !p.isOlderThan7Days && p.price > 0);
+  const pricePoolForLowest = freshPrices.length > 0 ? freshPrices : validPrices.filter((p: any) => p.price > 0);
+
+  const lowestPrice = pricePoolForLowest.length > 0 ? Math.min(...pricePoolForLowest.map((p: any) => p.price)) : 0;
+  const highestPrice = validPrices.length > 0 ? Math.max(...validPrices.map((p: any) => p.price)) : 0;
+  const sortedPrices = [...validPrices].sort((a: any, b: any) => a.price - b.price);
+
+  const bestStorePrice = pricePoolForLowest.length > 0
+    ? [...pricePoolForLowest].sort((a: any, b: any) => a.price - b.price)[0]
+    : (sortedPrices.length > 0 ? sortedPrices[0] : null);
 
   function trPrice(price: number) {
     return new Intl.NumberFormat('tr-TR', { maximumFractionDigits: 0 }).format(Math.round(price)) + ' ₺';
@@ -329,6 +363,14 @@ export default async function UrunDetay({ params }: { params: { slug: string } }
               </span>
             </div>
 
+            {/* Tüm Fiyatlar 7 Günden Eskiyse Uyarı Notu */}
+            {allPricesOlderThan7Days && (
+              <div className="mb-6 p-4 bg-amber-50 border border-amber-200 rounded-2xl flex items-center gap-3 text-amber-800 text-sm font-semibold">
+                <span className="text-xl">⚠️</span>
+                <span>Bu fiyatlar {minDaysDiff} gün önce güncellendi, mağazadaki güncel fiyat farklı olabilir.</span>
+              </div>
+            )}
+
             {/* Lowest Price Banner */}
             <div className="bg-slate-900 p-8 rounded-[2rem] mb-4 flex flex-col sm:flex-row items-start sm:items-center justify-between shadow-2xl shadow-slate-900/10 border border-slate-800 gap-8">
               <div>
@@ -337,8 +379,8 @@ export default async function UrunDetay({ params }: { params: { slug: string } }
               </div>
               <div className="flex flex-col items-center gap-4 w-full sm:w-auto">
                 <PriceAlertModal productId={product.id} productTitle={product.title} currentPrice={lowestPrice} />
-                {sortedPrices.length > 0 && sortedPrices[0].product_url && sortedPrices[0].product_url.startsWith('http') && (
-                  <a href={`/git/${product.id}?vendor=${sortedPrices[0].vendor_id || sortedPrices[0].vendors?.id}`} target="_blank" rel="noopener noreferrer" className="bg-white hover:bg-slate-100 text-slate-900 font-black h-14 px-10 rounded-2xl shadow-xl transition-all duration-300 hover:-translate-y-1 w-full sm:w-auto flex items-center justify-center gap-3 group">
+                {bestStorePrice && bestStorePrice.product_url && bestStorePrice.product_url.startsWith('http') && (
+                  <a href={`/git/${product.id}?vendor=${bestStorePrice.vendor_id || bestStorePrice.vendors?.id}`} target="_blank" rel="noopener noreferrer" className="bg-white hover:bg-slate-100 text-slate-900 font-black h-14 px-10 rounded-2xl shadow-xl transition-all duration-300 hover:-translate-y-1 w-full sm:w-auto flex items-center justify-center gap-3 group">
                     Mağazaya İlerle <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
                   </a>
                 )}
