@@ -92,19 +92,27 @@ export default async function UrunDetay({ params }: { params: { slug: string } }
   familyIds = Array.from(new Set(familyIds)); // Tekilleştir
 
   // Tüm ailenin güncel fiyatlarını çek
-  const { data: familyPrices } = await supabase
+  const { data: familyPrices, error: familyPricesError } = await supabase
     .from('product_prices')
     .select(`
-      price, original_price, shipping_info, product_url, in_stock, vendor_id, last_updated_at, updated_at, created_at,
+      price, original_price, shipping_info, product_url, in_stock, vendor_id, last_updated_at, updated_at,
       vendors (id, name, logo, color)
     `)
     .in('product_id', familyIds);
 
+  if (familyPricesError) {
+    console.error(`[UrunDetay] Fiyat sorgusu hatası (familyIds: ${JSON.stringify(familyIds)}):`, familyPricesError);
+  }
+
   // Tüm ailenin geçmiş fiyatlarını çek
-  const { data: familyHistory } = await supabase
+  const { data: familyHistory, error: familyHistoryError } = await supabase
     .from('price_history')
     .select('id, price, recorded_at, vendors(name)')
     .in('product_id', familyIds);
+
+  if (familyHistoryError) {
+    console.error(`[UrunDetay] Fiyat geçmişi hatası (familyIds: ${JSON.stringify(familyIds)}):`, familyHistoryError);
+  }
 
   if (!product) {
     notFound();
@@ -127,7 +135,7 @@ export default async function UrunDetay({ params }: { params: { slug: string } }
 
   const now = new Date();
   const validPrices = rawPrices.map((p: any) => {
-    const dateStr = p.last_updated_at || p.updated_at || p.created_at;
+    const dateStr = p.last_updated_at || p.updated_at;
     let hoursDiff = 0;
     let daysDiff = 0;
     let timeAgoText = 'Bilinmiyor';
